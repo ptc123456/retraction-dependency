@@ -65,6 +65,16 @@ Current POST_DEPLOY source package SHA-256:
 
 `1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01`
 
+Current GitHub-preparation source package SHA-256:
+
+`a7c4785162fb1130cea5b866a0b40c3d7f949363eeaa3854bfe6738468d74475`
+
+The GitHub-preparation hash differs only because release hygiene removed
+trailing whitespace from frontend source. Contract source and deployed-source
+parity are unchanged. The complete local release suite was rerun after this
+change. The exact 40-character commit containing this document is recorded in
+the GitHub pre-push report and the final immutable review package.
+
 ## Studionet deployment evidence
 
 - Contract: [`0xcEe31f6b4B1718445b2480C56940cCF72912a410`](https://explorer-studio.genlayer.com/address/0xcEe31f6b4B1718445b2480C56940cCF72912a410)

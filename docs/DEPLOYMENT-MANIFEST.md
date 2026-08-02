@@ -22,8 +22,9 @@ wallet backup, or access token.
 | User deployment authorization | CONFIRMED - deploy RetractionDependency to Studionet 61999 from the selected wallet with the same address as upgrader |
 | PRE_DEPLOY source package SHA-256 | `d460505c41edafa724112061b0b8f37ed1bba2590c9aaa89a2f84c79baaa4082` |
 | Current POST_DEPLOY source package SHA-256 | `1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01` |
+| Current GitHub-preparation source package SHA-256 | `a7c4785162fb1130cea5b866a0b40c3d7f949363eeaa3854bfe6738468d74475` |
 | Contract source SHA-256 | `e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769` |
-| Exact Git commit | NOT YET CREATED — POST_GITHUB_VERCEL_FINAL |
+| Exact Git commit | Current `main` HEAD; exact 40-character SHA is recorded in the pre-push report and final immutable review package |
 | Contract address | `0xcEe31f6b4B1718445b2480C56940cCF72912a410` |
 | Deployment transaction | `0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff` |
 | Explorer evidence | [Contract](https://explorer-studio.genlayer.com/address/0xcEe31f6b4B1718445b2480C56940cCF72912a410) / [transaction](https://explorer-studio.genlayer.com/tx/0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff) |
