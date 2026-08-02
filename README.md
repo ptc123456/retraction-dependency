@@ -13,7 +13,8 @@ decision on Studionet.
 - Deployment transaction:
   [`0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff`](https://explorer-studio.genlayer.com/tx/0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff)
 - Network: GenLayer Studionet, chain ID `61999` (`0xf22f`)
-- Live app: not yet published; Vercel deployment remains pending.
+- Live app:
+  [`https://retraction-dependency.vercel.app`](https://retraction-dependency.vercel.app)
 
 ## Trust problem
 
@@ -224,9 +225,10 @@ The application is Studionet-only:
 - Explorer: `https://explorer-studio.genlayer.com`;
 - `VITE_CONTRACT_ADDRESS`: required, with no fallback or example address.
 
-For Vercel, use `frontend` as the project root, `npm run build` as the build
-command, and `dist` as the output directory. `frontend/vercel.json` preserves
-SPA deep links. No Vercel deployment is claimed yet.
+The production frontend is deployed from `frontend` with `npm run build` and
+the `dist` output directory. `frontend/vercel.json` preserves SPA deep links.
+Vercel production environment `VITE_CONTRACT_ADDRESS` is bound to the verified
+Studionet contract above.
 
 ## Security and trust boundaries
 
@@ -251,9 +253,8 @@ SPA deep links. No Vercel deployment is claimed yet.
 - WalletConnect/mobile QR is not claimed because no WalletConnect Project ID is
   provisioned. Installed EIP-6963/EIP-1193 wallets are supported.
 - The configured Root Slot upgrader remains a disclosed trust authority.
-- The live Vercel URL and final submission approval do not yet exist at this
-  checkpoint. The public GitHub repository is available from **Verified
-  links** above.
+- Final dual approval remains pending. The public GitHub repository and live
+  Vercel application are available from **Verified links** above.
 
 ## License
 

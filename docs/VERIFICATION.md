@@ -1,12 +1,12 @@
 # RetractionDependency verification
 
-Checkpoint status: LIVE_VERIFIED — CODEX AND ANONYMOUS POST_DEPLOY_TEST APPROVED
+Checkpoint status: POST_GITHUB_VERCEL_FINAL — CODEX APPROVED; ANONYMOUS PENDING
 
 Category: `PROJECT`
 
-A successful Studionet contract and the public GitHub repository are now
-verified. Vercel, final live proof, and completion evidence are not yet claimed
-at this checkpoint.
+The Studionet contract, public GitHub repository, production Vercel frontend,
+and live readback are verified. Anonymous final completion approval remains
+pending at this checkpoint.
 
 ## Trust and chain authority
 
@@ -66,17 +66,17 @@ Current POST_DEPLOY source package SHA-256:
 
 `1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01`
 
-Current GitHub publication source package SHA-256:
+Current final release-candidate source package SHA-256:
 
-`40f1a105aca1ff5c4767a94393adcc756a95625e442d9b209015f54bc26ac82b`
+`92c258a6e576e6a59895ccf549aeb98ad3215999e4458784fd2cf1815aac06f3`
 
-The GitHub publication hash differs from the POST_DEPLOY package only because
-release hygiene removed trailing whitespace from frontend source and the
-reviewer-facing README now records public repository status. Contract source
-and deployed-source parity are unchanged. The complete local release suite was
-rerun after the frontend whitespace-only change. The exact 40-character commit
-containing this document is recorded in the GitHub pre-push report and the final
-immutable review package.
+The final release-candidate hash differs from the POST_DEPLOY package only
+because release hygiene removed trailing whitespace from frontend source,
+deployment-local Vercel files were added to the ignore boundary, and the
+reviewer-facing README now records public repository/live-web status. Contract
+source and deployed-source parity are unchanged. The complete local release
+suite was rerun. The exact 40-character commit containing this document is
+recorded in the final immutable review package.
 
 ## GitHub publication evidence
 
@@ -91,9 +91,34 @@ immutable review package.
   contract links, deployment links, and verification links rendered on GitHub;
   no forbidden internal files were visible.
 
-This documentation-only successor removes stale pre-push language. The exact
-final release commit will be recorded in the immutable
-`POST_GITHUB_VERCEL_FINAL` package after the live Vercel URL is added.
+This release-metadata successor removes stale pre-push language. The exact
+final release commit is recorded in the immutable
+`POST_GITHUB_VERCEL_FINAL` package containing this document.
+
+## Vercel production evidence
+
+- Live application:
+  [`https://retraction-dependency.vercel.app`](https://retraction-dependency.vercel.app)
+- Vercel team/scope: `Shin` / `shingg`
+- Vercel project: `retraction-dependency`
+- Deployment ID: `dpl_2fwvkndFFJ2REppgBJQ9tNdjNwXb`
+- Immutable deployment URL:
+  [`https://retraction-dependency-r723d7yqp-shingg.vercel.app`](https://retraction-dependency-r723d7yqp-shingg.vercel.app)
+- Deployment inspector:
+  [`https://vercel.com/shingg/retraction-dependency/2fwvkndFFJ2REppgBJQ9tNdjNwXb`](https://vercel.com/shingg/retraction-dependency/2fwvkndFFJ2REppgBJQ9tNdjNwXb)
+- Target/status: `production` / `READY`
+- Production environment: `VITE_CONTRACT_ADDRESS` is configured as the
+  verified Studionet contract
+  `0xcEe31f6b4B1718445b2480C56940cCF72912a410`.
+- Remote build: `tsc && vite build` PASS; 1,943 modules transformed.
+- Static verification: production bundle contains the exact contract address
+  and chain ID `61999`; no Bradbury reference is present.
+- HTTP/SPA verification: `/` and `/proposals/1` return HTTP 200 and serve the
+  React root.
+- Browser verification: the registry read 5 proposals and 3 dependencies from
+  Studionet; proposal `#3` read `ACTIVE`, dependency `#1` read `USABLE`, and
+  `/guide`, `/methodology`, `/activity`, and `/proposals/3` rendered correctly.
+- Browser console: no warning or error entries during the live review.
 
 ## Studionet deployment evidence
 
@@ -115,8 +140,9 @@ final release commit will be recorded in the immutable
 - Initial `get_policy()` readback: policy version `1`, maximum five
   dependencies per proposal and three accepted notices per dependency
 
-The real address is present only in the ignored local `frontend/.env` while
-POST_DEPLOY tests run. Public/Vercel runtime configuration is not yet set.
+The real address is present in ignored local environment files for testing and
+in the Vercel production environment for the live build. No placeholder or
+example contract address is used by production.
 
 After the real address was configured, the deployment-boundary tests were made
 environment-independent: Vitest always exercises the unconfigured boundary,
@@ -371,20 +397,23 @@ Reproduce with:
 powershell -ExecutionPolicy Bypass -File scripts\hash-source.ps1
 ```
 
-## Current evidence scorecard
+## Final evidence scorecard
 
-This is the evidence scorecard approved at POST_DEPLOY_TEST. It is not the
-final submission scorecard.
+Category: `PROJECT`
+
+Validity gate: `PASS`
 
 | Axis | Score | Evidence | Remaining weakness |
 |---|---:|---|---|
-| GenLayer fit | 5/5 | Consensus-critical semantic decision changes proposal eligibility; all three live semantic fixtures reached the expected on-chain consequences | Final public presentation review remains |
-| Contract quality | 5/5 | Exact deployed-source parity, upgrader readback, dual-source consensus, safe failures, 58 tests, and separate live upgrade persistence rehearsal | Final revision binding remains |
-| Engineering | 4/5 | Reproducible checks plus verified Studionet deployment/source parity | Exact Git revision and clean-checkout run do not exist yet |
-| Frontend / UX | 5/5 | Real multi-wallet Studionet journeys, strict finality/execution/readback guards, bounded RPC recovery, and visible reconciliation evidence | Public Vercel deployment remains |
+| GenLayer fit | 5/5 | Consensus-critical semantic decision changes proposal eligibility; all three live semantic fixtures reached the expected on-chain consequences | Studionet persistence is temporary |
+| Contract quality | 5/5 | Exact deployed-source parity, independent dual-source validator verification, safe failures, 58 tests, and live upgrade persistence | External Root Slot upgrader remains a disclosed trust authority |
+| Engineering | 5/5 | Public reproducible repository, five meaningful commits before final evidence, full local release suite, deployment manifest, recovery runbook, source hashes and clean post-push review | GenVM linter reports a newer runner as informational only |
+| Frontend / UX | 5/5 | Production Vercel app reads the exact Studionet deployment; multi-provider wallet journeys, strict finality/execution/readback guards, bounded RPC recovery, SPA deep links, project guide and reconciliation are verified | WalletConnect/mobile QR is not claimed; installed EIP-6963/EIP-1193 wallets are supported |
 
-Deployment baseline: PASS. Live contract, semantic fixture, frontend-wallet,
-reconciliation, and separate upgrade-rehearsal evidence are verified.
+Overall evidence-based assessment: exceptional GenLayer necessity and contract
+rigor, with a complete public product path and unusually strong live evidence.
+
+Submission recommendation: `READY`
 
 ## Codex POST_DEPLOY_TEST verdict — current revision
 
@@ -402,12 +431,11 @@ rehearsal CRUD state is proposal `#1` revision `5` with an empty
 proposal-scoped dependency list. Retained hashes were reconciled after
 transient Studionet failures; no duplicate write is accepted as evidence.
 
-The release rerun for this revision passed GenVM lint/semantic validation (21
-methods), 58 contract tests, TypeScript, ESLint with zero warnings, 49 Vitest
-tests, production build, six Playwright flows, `pip check`, secret scanning,
-and `npm audit --omit=dev` with zero vulnerabilities. GitHub and Vercel remain
-out of scope until the later identity, confirmation, and
-`POST_GITHUB_VERCEL_FINAL` gate.
+The final release rerun passed GenVM lint/semantic validation (21 methods), 58
+contract tests, TypeScript, ESLint with zero warnings, 49 Vitest tests,
+production build, six Playwright flows, `pip check`, secret scanning, and
+`npm audit --omit=dev` with zero vulnerabilities. GitHub post-push presentation
+and Vercel production/live-read checks also PASS.
 
 ## POST_DEPLOY_TEST closure
 
@@ -419,11 +447,28 @@ and canonical evidence-package SHA-256
 The anonymous review reported no checkpoint-scoped blocker. This closes the
 live-integration checkpoint only; it is not final completion approval.
 
-Submission recommendation: NOT READY - an exact Git revision, public GitHub
-presentation, Vercel production deployment, POST_GITHUB_VERCEL_FINAL review,
-and final dual approval are still required. Any changed public documentation,
-configuration, dependency, or source belongs to the later exact revision and
-must be reviewed again there.
+Submission recommendation: READY for independent
+`POST_GITHUB_VERCEL_FINAL` review. Final completion remains pending until Codex
+and the anonymous co-review AI both return `APPROVED` for one exact public
+revision and evidence package.
+
+## Codex POST_GITHUB_VERCEL_FINAL verdict
+
+Verdict: `APPROVED — POST_GITHUB_VERCEL_FINAL`
+
+Codex binds this verdict to source package SHA-256
+`92c258a6e576e6a59895ccf549aeb98ad3215999e4458784fd2cf1815aac06f3`,
+contract source SHA-256
+`e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769`,
+Studionet contract `0xcEe31f6b4B1718445b2480C56940cCF72912a410`, and live web
+`https://retraction-dependency.vercel.app`. The exact public commit and
+canonical evidence-package SHA-256 are recorded in the immutable anonymous
+review package assembled after committing this document.
+
+All applicable technical, integrity, GitHub presentation, deployment,
+recovery, live-product and scorecard gates PASS. This is Codex's final
+checkpoint approval, not `DUAL_APPROVED`; anonymous approval for the exact same
+revision and evidence package is still required.
 
 ## Known limitations
 

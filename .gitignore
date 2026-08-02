@@ -11,6 +11,8 @@ __pycache__/
 .pytest_cache/
 artifacts/
 .env
+.env*.local
+.vercel/
 
 # Internal governance, specification & working files (not part of deliverable repo)
 AGENTS.md

@@ -1,6 +1,6 @@
 # RetractionDependency deployment manifest
 
-Status: LIVE_VERIFIED — CODEX AND ANONYMOUS POST_DEPLOY_TEST APPROVED
+Status: POST_GITHUB_VERCEL_FINAL — CODEX APPROVED; ANONYMOUS PENDING
 
 This document is secret-free. Never add a private key, seed phrase, API key,
 wallet backup, or access token.
@@ -22,7 +22,7 @@ wallet backup, or access token.
 | User deployment authorization | CONFIRMED - deploy RetractionDependency to Studionet 61999 from the selected wallet with the same address as upgrader |
 | PRE_DEPLOY source package SHA-256 | `d460505c41edafa724112061b0b8f37ed1bba2590c9aaa89a2f84c79baaa4082` |
 | Current POST_DEPLOY source package SHA-256 | `1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01` |
-| Current GitHub publication source package SHA-256 | `40f1a105aca1ff5c4767a94393adcc756a95625e442d9b209015f54bc26ac82b` |
+| Current final release-candidate source package SHA-256 | `92c258a6e576e6a59895ccf549aeb98ad3215999e4458784fd2cf1815aac06f3` |
 | Contract source SHA-256 | `e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769` |
 | First public reviewed Git commit | [`b88a9b0f81e1965df29c7156a4bfe06315f0eaa8`](https://github.com/ptc123456/retraction-dependency/commit/b88a9b0f81e1965df29c7156a4bfe06315f0eaa8) |
 | Public repository | [`ptc123456/retraction-dependency`](https://github.com/ptc123456/retraction-dependency) |
@@ -34,7 +34,10 @@ wallet backup, or access token.
 | Authorized upgrade transaction | `0xacdf70d1c9c5844da08f38f565e66d3afb5af2a2ee65930522fc2a6330222f1d` |
 | Upgrade rehearsal result | PASS - `FINALIZED`, `MAJORITY_AGREE`, all effective receipts `SUCCESS`, exact code parity and state persistence |
 | Rehearsal draft CRUD | PASS - edit proposal, add/edit/remove dependency, exact finality/execution/readback evidence |
-| Live web | NOT YET CREATED — POST_GITHUB_VERCEL_FINAL |
+| Live web | [`https://retraction-dependency.vercel.app`](https://retraction-dependency.vercel.app) |
+| Vercel team / project | `shingg` / `retraction-dependency` |
+| Vercel deployment ID | `dpl_2fwvkndFFJ2REppgBJQ9tNdjNwXb` |
+| Vercel deployment status | `production` / `READY` |
 
 The selected deployment wallet and upgrader are the same external
 user-controlled wallet. Codex and the anonymous co-review AI approved the exact
@@ -144,17 +147,16 @@ new Codex-approved migration plan and separate deployment.
 This is a single-contract architecture. There are no linked writers,
 registries, child contracts, bounties, or funding transactions.
 
-The real contract address is configured only in the ignored local
-`frontend/.env` for POST_DEPLOY testing. Vercel/production configuration remains
-unset until live acceptance and the later Vercel identity/confirmation gate.
+The real contract address is configured in ignored local environment files for
+testing and as the Vercel production `VITE_CONTRACT_ADDRESS`. The production
+bundle contains the exact verified Studionet contract address and chain ID
+`61999`; it contains no Bradbury reference.
 
 ## Remaining release evidence
 
-- exact final release commit and source-package hash after the live Vercel URL
-  is added;
-- frontend/Vercel production address configuration record after the user selects
-  and confirms the Vercel account/team;
-- `POST_GITHUB_VERCEL_FINAL` dual review for one exact public revision and live URL.
+- exact final release commit and source-package/evidence-package hashes;
+- anonymous `POST_GITHUB_VERCEL_FINAL` approval for the same public revision,
+  contract and live URL.
 
 The completed POST_DEPLOY_TEST approval is bound to source package SHA-256
 `1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01`
