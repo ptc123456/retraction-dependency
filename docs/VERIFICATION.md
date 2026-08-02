@@ -4,8 +4,9 @@ Checkpoint status: LIVE_VERIFIED — CODEX AND ANONYMOUS POST_DEPLOY_TEST APPROV
 
 Category: `PROJECT`
 
-A successful Studionet contract is now verified. GitHub, Vercel, final live
-proof, and completion evidence are not yet claimed at this checkpoint.
+A successful Studionet contract and the public GitHub repository are now
+verified. Vercel, final live proof, and completion evidence are not yet claimed
+at this checkpoint.
 
 ## Trust and chain authority
 
@@ -65,15 +66,34 @@ Current POST_DEPLOY source package SHA-256:
 
 `1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01`
 
-Current GitHub-preparation source package SHA-256:
+Current GitHub publication source package SHA-256:
 
-`a7c4785162fb1130cea5b866a0b40c3d7f949363eeaa3854bfe6738468d74475`
+`40f1a105aca1ff5c4767a94393adcc756a95625e442d9b209015f54bc26ac82b`
 
-The GitHub-preparation hash differs only because release hygiene removed
-trailing whitespace from frontend source. Contract source and deployed-source
-parity are unchanged. The complete local release suite was rerun after this
-change. The exact 40-character commit containing this document is recorded in
-the GitHub pre-push report and the final immutable review package.
+The GitHub publication hash differs from the POST_DEPLOY package only because
+release hygiene removed trailing whitespace from frontend source and the
+reviewer-facing README now records public repository status. Contract source
+and deployed-source parity are unchanged. The complete local release suite was
+rerun after the frontend whitespace-only change. The exact 40-character commit
+containing this document is recorded in the GitHub pre-push report and the final
+immutable review package.
+
+## GitHub publication evidence
+
+- Public repository:
+  [`ptc123456/retraction-dependency`](https://github.com/ptc123456/retraction-dependency)
+- Account/owner: `ptc123456`
+- Default branch: `main`
+- First public reviewed commit:
+  [`b88a9b0f81e1965df29c7156a4bfe06315f0eaa8`](https://github.com/ptc123456/retraction-dependency/commit/b88a9b0f81e1965df29c7156a4bfe06315f0eaa8)
+- Repository visibility: `PUBLIC`
+- Post-push inspection: root tree, commit history, README headings, tables,
+  contract links, deployment links, and verification links rendered on GitHub;
+  no forbidden internal files were visible.
+
+This documentation-only successor removes stale pre-push language. The exact
+final release commit will be recorded in the immutable
+`POST_GITHUB_VERCEL_FINAL` package after the live Vercel URL is added.
 
 ## Studionet deployment evidence
 

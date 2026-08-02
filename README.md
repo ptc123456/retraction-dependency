@@ -6,13 +6,14 @@ decision on Studionet.
 
 ## Verified links
 
+- Public repository:
+  [`ptc123456/retraction-dependency`](https://github.com/ptc123456/retraction-dependency)
 - Studionet contract:
   [`0xcEe31f6b4B1718445b2480C56940cCF72912a410`](https://explorer-studio.genlayer.com/address/0xcEe31f6b4B1718445b2480C56940cCF72912a410)
 - Deployment transaction:
   [`0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff`](https://explorer-studio.genlayer.com/tx/0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff)
 - Network: GenLayer Studionet, chain ID `61999` (`0xf22f`)
-- Live app: not yet published; no Vercel URL is claimed in this pre-push
-  revision.
+- Live app: not yet published; Vercel deployment remains pending.
 
 ## Trust problem
 
@@ -250,8 +251,9 @@ SPA deep links. No Vercel deployment is claimed yet.
 - WalletConnect/mobile QR is not claimed because no WalletConnect Project ID is
   provisioned. Installed EIP-6963/EIP-1193 wallets are supported.
 - The configured Root Slot upgrader remains a disclosed trust authority.
-- The live Vercel URL, GitHub commit, and final submission approval do not yet
-  exist at this checkpoint.
+- The live Vercel URL and final submission approval do not yet exist at this
+  checkpoint. The public GitHub repository is available from **Verified
+  links** above.
 
 ## License
 
