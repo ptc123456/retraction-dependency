@@ -102,10 +102,11 @@ final release commit is recorded in the immutable
 - Vercel team/scope: `Shin` / `shingg`
 - Vercel project: `retraction-dependency`
 - Deployment ID: `dpl_2fwvkndFFJ2REppgBJQ9tNdjNwXb`
-- Immutable deployment URL:
-  [`https://retraction-dependency-r723d7yqp-shingg.vercel.app`](https://retraction-dependency-r723d7yqp-shingg.vercel.app)
-- Deployment inspector:
-  [`https://vercel.com/shingg/retraction-dependency/2fwvkndFFJ2REppgBJQ9tNdjNwXb`](https://vercel.com/shingg/retraction-dependency/2fwvkndFFJ2REppgBJQ9tNdjNwXb)
+- Public-release URL policy: the production alias above is the only Vercel
+  application URL presented as public release evidence. Vercel's generated
+  deployment hostname and account-level inspector are management surfaces that
+  may require team authentication; they are intentionally excluded from the
+  public-link evidence set.
 - Target/status: `production` / `READY`
 - Production environment: `VITE_CONTRACT_ADDRESS` is configured as the
   verified Studionet contract
@@ -118,6 +119,10 @@ final release commit is recorded in the immutable
 - Browser verification: the registry read 5 proposals and 3 dependencies from
   Studionet; proposal `#3` read `ACTIVE`, dependency `#1` read `USABLE`, and
   `/guide`, `/methodology`, `/activity`, and `/proposals/3` rendered correctly.
+- Anonymous-link verification: fresh requests without cookies or credentials
+  returned the application from the production alias and its documented SPA
+  routes without a login or SSO redirect. Authenticated Vercel management
+  surfaces are not represented as public application links.
 - Browser console: no warning or error entries during the live review.
 
 ## Studionet deployment evidence

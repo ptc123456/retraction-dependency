@@ -263,7 +263,7 @@ MIT. See [`LICENSE`](LICENSE).
 ## References
 
 - [GenLayer networks](https://docs.genlayer.com/developers/networks)
-- [Intelligent Contracts](https://docs.genlayer.com/developers/intelligent-contracts)
-- [Decentralized applications](https://docs.genlayer.com/developers/decentralized-applications)
+- [Intelligent Contracts introduction](https://docs.genlayer.com/developers/intelligent-contracts/introduction)
+- [Decentralized application architecture](https://docs.genlayer.com/developers/decentralized-applications/architecture-overview)
 - [Crossref REST API](https://api.crossref.org)
 - [Europe PMC REST API](https://europepmc.org/RestfulWebService)
