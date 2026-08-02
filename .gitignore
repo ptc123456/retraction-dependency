@@ -1,0 +1,26 @@
+# Build & Node Output
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+*.log
+
+# Python & Test Artifacts
+__pycache__/
+*.pyc
+.pytest_cache/
+artifacts/
+.env
+
+# Internal governance, specification & working files (not part of deliverable repo)
+AGENTS.md
+ANTIGRAVITY-IMPLEMENTATION-PROMPT.md
+ANTIGRAVITY-REPAIR-ATTEMPT-*.md
+CLAUDE.md
+GEMINI.md
+SPECIFICATION.md
+CONTEXT.md
+DESIGN.md
+tokens.css
+FEASIBILITY.md
+.hallmark/
