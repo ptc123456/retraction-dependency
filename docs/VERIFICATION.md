@@ -1,0 +1,461 @@
+# RetractionDependency verification
+
+Checkpoint status: LIVE_VERIFIED — CODEX AND ANONYMOUS POST_DEPLOY_TEST APPROVED
+
+Category: `PROJECT`
+
+A successful Studionet contract is now verified. GitHub, Vercel, final live
+proof, and completion evidence are not yet claimed at this checkpoint.
+
+## Trust and chain authority
+
+Proposal owners cannot be trusted to decide whether a correction or retraction
+invalidates their own frozen literature dependency. Permissionless auditors
+cannot be trusted to submit a verdict or arbitrary evidence URL. The contract
+derives bounded Crossref and Europe PMC URLs from canonical identifiers,
+requires dual binding, evaluates the exact frozen dependency, and has validators
+independently refetch and verify every consequence-critical field.
+
+The Intelligent Contract alone changes `EVIDENCE_HOLD`, `ELIGIBLE`, `ACTIVE`,
+or `INVALIDATED`. The frontend treats a write as successful only after
+`FINALIZED`, `FINISHED_WITH_RETURN`, and method-specific contract readback.
+
+## Local evidence matrix
+
+| Check | Result |
+|---|---|
+| GenVM lint and validation | PASS - 21 methods (11 view, 10 write) |
+| Deterministic contract/consensus tests | PASS - 58 |
+| glsim live-web fixtures | PASS - A, B, C with 3/3 agree votes |
+| glsim upgrade authorization/persistence rehearsal | PASS |
+| Frontend TypeScript | PASS |
+| ESLint with zero warnings | PASS |
+| Vitest | PASS - 49 |
+| Production Vite build | PASS |
+| Playwright Chromium | PASS - 6, including multi-provider wallet selection |
+| Python dependency consistency | PASS - `pip check` |
+
+Reproduction commands:
+
+```powershell
+py -3.13 scripts\lint-contract.py
+py -3.13 -m pytest tests\contract -v
+
+glsim --port 4000 --validators 3 --max-rotations 3 --no-browser
+gltest tests\integration\test_glsim_live_consensus.py -v
+
+cd frontend
+npm ci
+npm run typecheck
+npm run lint
+npm run test
+npm run build
+npm run e2e
+```
+
+Contract source SHA-256:
+
+`e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769`
+
+PRE_DEPLOY source package SHA-256:
+
+`d460505c41edafa724112061b0b8f37ed1bba2590c9aaa89a2f84c79baaa4082`
+
+Current POST_DEPLOY source package SHA-256:
+
+`1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01`
+
+## Studionet deployment evidence
+
+- Contract: [`0xcEe31f6b4B1718445b2480C56940cCF72912a410`](https://explorer-studio.genlayer.com/address/0xcEe31f6b4B1718445b2480C56940cCF72912a410)
+- Deployment transaction: [`0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff`](https://explorer-studio.genlayer.com/tx/0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff)
+- Network: GenLayer Studionet, chain ID `61999` (`0xf22f`)
+- Transaction status/result: `FINALIZED` / `MAJORITY_AGREE`
+- GenVM execution: leader and four validator receipts report `SUCCESS`; no
+  error, stderr, error code, or error description
+- `from_address` and `origin_address`:
+  `0x277bF20771129ae224042d23b0311C1AC5a9AC1b`
+- Deployed code SHA-256:
+  `e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769`
+  — exact parity with the reviewed contract source
+- Contract schema: 21 methods
+- `get_deployment_config()` readback: classification `UPGRADABLE`, configured
+  upgrader `0x277bF20771129ae224042d23b0311C1AC5a9AC1b`, storage layout version `1`
+- Initial `get_counts()` readback: zero proposals and zero dependencies
+- Initial `get_policy()` readback: policy version `1`, maximum five
+  dependencies per proposal and three accepted notices per dependency
+
+The real address is present only in the ignored local `frontend/.env` while
+POST_DEPLOY tests run. Public/Vercel runtime configuration is not yet set.
+
+After the real address was configured, the deployment-boundary tests were made
+environment-independent: Vitest always exercises the unconfigured boundary,
+while Playwright can run both unconfigured and live-address modes. The current
+package passes TypeScript, ESLint, Vitest 49/49, production build, Playwright
+6/6 unconfigured, and Playwright 6/6 against the real Studionet contract.
+
+The frontend now discovers all installed EIP-6963 providers and legacy
+EIP-1193 providers, presents an explicit selector when more than one wallet is
+available, and routes account, network, and signing requests through the chosen
+provider. MetaMask-specific Snap RPCs are isolated to MetaMask. Other compatible
+EVM wallets use their own EIP-1193 signing path. Studionet currently returns
+zero for both `eth_gasPrice` and the latest block base fee; the frontend applies
+a 1-gwei wallet-facing compatibility floor so OKX and similar wallets do not
+stall indefinitely during fee estimation.
+Contract reads now retry only transient transport failures (`Failed to fetch`,
+connection resets, and timeouts), with a ten-second cap per attempt and one
+bounded retry. Deterministic contract errors are never retried. If both attempts
+fail, the proposal page preserves an explicit `Retry chain read` action instead
+of loading indefinitely or misrepresenting the transport failure as missing
+on-chain state. Retry and hanging-request boundaries have Vitest coverage.
+Repeated announcements and legacy provider wrappers are deduplicated by the
+wallet's reverse-DNS identity, so each installed wallet appears once.
+Wallet-returned accounts are normalized to EIP-55 before client creation,
+owner-indexed reads, and transaction persistence. This keeps a lowercase OKX
+account and the contract's checksum owner key identical during reconciliation.
+WalletConnect/mobile QR is not claimed without a separately provisioned
+WalletConnect Project ID.
+
+The header labels the raw `get_counts()` values as registered proposals and
+registered dependencies. It does not mislabel those totals as active or audited
+subsets, which the count method does not return. When RPC reads are unavailable,
+the header shows an unknown marker instead of fake zero counts and recovers on
+focus, successful chain-state refresh, or a bounded visible-tab interval.
+
+The current frontend adds an in-app Project Guide with the trust problem,
+six-step operating flow, state glossary, recovery guidance, and product safety
+boundary. The editorial shell now uses a warm ivory, deep blue-green,
+terracotta, and spruce palette; a dense colophon exposes network, evidence, and
+policy context on every route. README usage documentation and social preview
+metadata match the same revision. The sixth public route is covered by unit and
+Playwright navigation tests.
+
+Studionet may expose transaction enum values numerically in simplified SDK
+receipts (`7` for `FINALIZED`, `1` for `FINISHED_WITH_RETURN`). The frontend
+normalizes both numeric and named receipt shapes before applying finality and
+execution guards. Locally retained hashes that were rejected only by the older
+numeric-status incompatibility are eligible for reconciliation without sending
+a duplicate transaction.
+
+Hash-bearing transactions remain recoverable after an SDK polling timeout or
+other local failure. Reconciliation is read-only: it rechecks finality,
+execution, and method-specific state before changing the local lifecycle, and
+never resubmits the write.
+
+The Activity Ledger now exposes its recovery state instead of silently running
+a no-op. Its control displays the recoverable hash count, reports how many
+hashes were confirmed or remain unresolved, and explicitly distinguishes a
+failed pre-submission wallet attempt with no hash from an on-chain transaction.
+Clearing confirmed records preserves failed and unresolved evidence.
+
+GenLayerJS defaults to only ten three-second finality polls. The live Studionet
+consensus runs exceeded that 30-second window despite finalizing successfully,
+so the frontend now polls every three seconds for up to six minutes before
+declaring a timeout. This changes only client-side observation; it does not
+resubmit, accelerate, or otherwise alter consensus.
+
+Studionet can reject a pre-signing wallet RPC while all eight execution slots
+are occupied. The wallet compatibility adapter retries only the exact
+`server busy: all ... execution slots occupied, retry later` rejection with
+bounded backoff. Wallet rejection and unknown send failures are never retried,
+which preserves the duplicate-transaction safety boundary.
+
+Studionet may also omit `txExecutionResult` while reporting execution inside
+`consensus_data`. The frontend derives execution success only for
+`MAJORITY_AGREE` when the leader and participating `agree` validator receipts
+report `SUCCESS`. Validators cancelled after quorum are marked `idle` with
+`CONSENSUS_VALIDATOR_QUORUM_REACHED`; those non-participating receipts are not
+execution failures. A non-agree consensus or any failure in an effective
+receipt remains fail-closed. Hashes rejected only by the former receipt-shape
+compatibility gap are reconciled without resubmission.
+
+First external-wallet live write:
+
+- action: `create_proposal`;
+- wallet: `0x5D598f10a428fB2039edbC3aCE83351650B286E0`;
+- transaction: [`0x2872bc28c037b22a8d8742e3e90a6b153bbd0ea1772481b4b5f9c938dcff091f`](https://explorer-studio.genlayer.com/tx/0x2872bc28c037b22a8d8742e3e90a6b153bbd0ea1772481b4b5f9c938dcff091f);
+- RPC result: `FINALIZED`, `MAJORITY_AGREE`, two leader receipts and four
+  validator receipts all `SUCCESS`;
+- transaction calldata decodes to the locked Fixture A title and claim.
+
+First dependency live write:
+
+- action: `add_dependency` for proposal `#3`;
+- transaction: [`0x94b9d308e0b583e7f9acb98458136ac8ca858d6b30dd684aa814ce61f7d40cc2`](https://explorer-studio.genlayer.com/tx/0x94b9d308e0b583e7f9acb98458136ac8ca858d6b30dd684aa814ce61f7d40cc2);
+- RPC result: `FINALIZED`, `MAJORITY_AGREE`, three validator agree votes;
+- state readback: proposal `#3` revision `2`, dependency `#1`, Fixture A
+  identifiers and frozen statement, verdict `UNREVIEWED`;
+- the initial SDK wait expired at status `5`; the on-chain write was not
+  duplicated and is recoverable through the lifecycle ledger.
+
+First seal live write:
+
+- action: `seal_proposal(3)`;
+- transaction: [`0xc54736c60ae6c8c0674757fe965f322595cc6b675f47ce2b343dacad0e0df34e`](https://explorer-studio.genlayer.com/tx/0xc54736c60ae6c8c0674757fe965f322595cc6b675f47ce2b343dacad0e0df34e);
+- RPC result: `FINALIZED`, `MAJORITY_AGREE`, all five validator votes
+  `agree`, all effective receipts `SUCCESS`;
+- state readback: proposal `#3` revision `3`, `sealed=true`, status
+  `EVIDENCE_HOLD`; dependency `#1` revision `2`, review `PENDING`, round `1`.
+
+First live consensus resolution:
+
+- action: `resolve_review(1)`;
+- transaction: [`0x76c2c3091ffaf9507692450640d5d514f1610f019046302d218a64481e17fcc1`](https://explorer-studio.genlayer.com/tx/0x76c2c3091ffaf9507692450640d5d514f1610f019046302d218a64481e17fcc1);
+- RPC result: `FINALIZED`, `MAJORITY_AGREE`; three validator votes `agree`
+  and two validators `idle` after quorum; all participating receipts report
+  `SUCCESS` with the same contract-state hash;
+- state readback: dependency `#1` revision `3`, verdict `USABLE`, one accepted
+  notice, review `IDLE`; proposal `#3` revision `4`, status `ELIGIBLE`, with no
+  pending review;
+- the frontend polling window expired while the transaction was at status `5`;
+  the finalized hash and method-specific readback prove that no retry write is
+  required.
+
+First live activation:
+
+- action: `activate_proposal(3)`;
+- transaction: [`0x21817630eefb44a7f7c4ce0c209303554c71ed7ba3458be68c2d1f899b477530`](https://explorer-studio.genlayer.com/tx/0x21817630eefb44a7f7c4ce0c209303554c71ed7ba3458be68c2d1f899b477530);
+- RPC result: `FINALIZED`, `MAJORITY_AGREE`; all five validator votes `agree`,
+  all participating execution receipts report `SUCCESS`, and all returned the
+  same contract-state hash;
+- state readback: proposal `#3` revision `5`, `activated=true`, status `ACTIVE`,
+  zero invalid dependencies, and no pending review;
+- the frontend polling window expired at status `5`, but finalized execution
+  and state readback prove activation succeeded and must not be resubmitted.
+
+## Complete live semantic fixture matrix
+
+Public Studionet reads on the deployed contract confirm all three locked
+fixtures reached their Policy V1 consequences through live consensus:
+
+| Fixture | Proposal / dependency | Accepted evidence | Final dependency verdict | Proposal consequence |
+|---|---|---|---|---|
+| A - unrelated correction | `#3` / `#1` | DOI `10.1371/journal.pntd.0011024`, binding `BOUND`, effect `NO_MATERIAL_EFFECT`, reason `CORRECTION_UNRELATED_TO_DEPENDENCY` | `USABLE` | `ACTIVE` |
+| B - material correction | `#4` / `#2` | DOI `10.1371/journal.pntd.0011026`, binding `BOUND`, effect `MATERIALLY_UNDERMINES`, reason `CORRECTION_CHANGES_DEPENDENCY` | `INVALID_FOR_CLAIM` | `INVALIDATED` |
+| C - retraction | `#5` / `#3` | DOI `10.1126/sciadv.adv4615`, binding `BOUND`, effect `MATERIALLY_UNDERMINES`, reason `RETRACTION_REMOVES_SUPPORT` | `INVALID_FOR_CLAIM` | `INVALIDATED` |
+
+Each dependency has one accepted evaluation, review round `1`, and review
+status `IDLE`. The contract reports five registered proposals and three
+registered dependencies. Fixture A demonstrates the usable/activation branch;
+Fixtures B and C independently demonstrate correction and retraction
+invalidation branches. These values were read directly from
+`get_proposal()`, `get_dependency()`, and `get_dependency_history()` after the
+transactions finalized.
+
+## Separate safe upgrade rehearsal
+
+The recovery path was exercised on a separate Studionet deployment so the
+submission contract and its live fixture state were not placed at risk.
+
+- rehearsal contract: [`0xF666b50B2096fdA2fCa3D7af7DC5BaB6e4907213`](https://explorer-studio.genlayer.com/address/0xF666b50B2096fdA2fCa3D7af7DC5BaB6e4907213);
+- rehearsal deployment: [`0x4ace3128a800b07a2e214095e5ca7914f6332f314fdeea228003282cd4b61189`](https://explorer-studio.genlayer.com/tx/0x4ace3128a800b07a2e214095e5ca7914f6332f314fdeea228003282cd4b61189);
+- pre-upgrade state creation: [`0x9eabf47f0c99cb4897df7902d90c7d63feed50b4c9ddb101616f0877789fad16`](https://explorer-studio.genlayer.com/tx/0x9eabf47f0c99cb4897df7902d90c7d63feed50b4c9ddb101616f0877789fad16);
+- authorized upgrade: [`0xacdf70d1c9c5844da08f38f565e66d3afb5af2a2ee65930522fc2a6330222f1d`](https://explorer-studio.genlayer.com/tx/0xacdf70d1c9c5844da08f38f565e66d3afb5af2a2ee65930522fc2a6330222f1d);
+- sender/origin and configured upgrader:
+  `0x277bF20771129ae224042d23b0311C1AC5a9AC1b`;
+- upgrade result: `FINALIZED`, `MAJORITY_AGREE`; leader and five validators
+  report `SUCCESS`, all with state hash
+  `b9ff1a78c1f19c6c5811373cf4b05146f40981d847751a3160fc32989e0d81db`;
+- post-upgrade code SHA-256:
+  `e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769`,
+  exactly matching the reviewed contract source;
+- post-upgrade configuration: `UPGRADABLE`, layout version `1`, same
+  configured upgrader and append-only storage policy;
+- persistence readback: counts remain one proposal and zero dependencies;
+  proposal `#1` remains revision `1`, `DRAFT`, unsealed, owned by the upgrader,
+  with title `Upgrade Rehearsal State` and its exact pre-upgrade claim text.
+
+This satisfies the live authorization, deployed-code parity, and storage
+persistence requirements without modifying the production fixture contract.
+
+### Rehearsal draft CRUD evidence
+
+After upgrade persistence was established, the same rehearsal proposal was
+used to exercise every remaining draft mutation through the external wallet
+and frontend transaction lifecycle:
+
+| Action | Transaction | Finality / execution / readback |
+|---|---|---|
+| `edit_proposal(1, ...)` | [`0x07d92da942beaaa4613b73d8b655d84ac41ff5a7fa347ff75493a50eb834021e`](https://explorer-studio.genlayer.com/tx/0x07d92da942beaaa4613b73d8b655d84ac41ff5a7fa347ff75493a50eb834021e) | `FINALIZED` / `FINISHED_WITH_RETURN` / `READBACK_CONFIRMED` |
+| `add_dependency(1, ...)` | [`0xe8e4f2819d8d1fcfd1370c61b4ba42e875da44f1d4b7c5d47ab3462833d158ba`](https://explorer-studio.genlayer.com/tx/0xe8e4f2819d8d1fcfd1370c61b4ba42e875da44f1d4b7c5d47ab3462833d158ba) | `FINALIZED` / `FINISHED_WITH_RETURN` / `READBACK_CONFIRMED` |
+| `edit_dependency(1, ...)` | [`0x645f3b7f6dceea4ec0e1e17268a9159e5f0c6fa5b1c2628a60a85b222a8877f5`](https://explorer-studio.genlayer.com/tx/0x645f3b7f6dceea4ec0e1e17268a9159e5f0c6fa5b1c2628a60a85b222a8877f5) | `FINALIZED` / `FINISHED_WITH_RETURN` / `READBACK_CONFIRMED` |
+| `remove_dependency(1, 1)` | [`0x7b0f51f3a81cbc59d2543a1427068a2494049f9c47e009c1b7bbfe028112f747`](https://explorer-studio.genlayer.com/tx/0x7b0f51f3a81cbc59d2543a1427068a2494049f9c47e009c1b7bbfe028112f747) | `FINALIZED` / Explorer `SUCCESS` and `Accepted` / contract readback confirmed |
+
+Final public readback reports proposal `#1` revision `5`, title
+`Upgrade Rehearsal Draft CRUD`, `DRAFT`, unsealed, and zero registered
+dependencies for that proposal. The remove transaction was retained after a
+transient RPC `QueuePool` failure and reconciled without duplicate submission.
+The rehearsal contract's cumulative dependency counter remains monotonic; the
+proposal-scoped dependency list is empty.
+
+## Permissionless re-review and safe rejected trigger
+
+A wallet that does not own proposal `#3` exercised the later-audit path against
+dependency `#1`:
+
+- third-party requester: `0x277bF20771129ae224042d23b0311C1AC5a9AC1b`;
+- proposal owner: `0x5D598f10a428fB2039edbC3aCE83351650B286E0`;
+- `request_review(1, "10.1371/journal.pntd.0011026", "36584025")`:
+  [`0x228ac28ee8a0f54550566d2c42ab2b1ba6d5a03d603fd6929b18cb8202657f3f`](https://explorer-studio.genlayer.com/tx/0x228ac28ee8a0f54550566d2c42ab2b1ba6d5a03d603fd6929b18cb8202657f3f);
+- `resolve_review(1)`:
+  [`0x9b1b95610d6d719d74688c6976cad3b8c7385983776e0fa2202eed2697c07cec`](https://explorer-studio.genlayer.com/tx/0x9b1b95610d6d719d74688c6976cad3b8c7385983776e0fa2202eed2697c07cec).
+
+Both transactions are `FINALIZED`. Participating leader/validator receipts
+report `SUCCESS` with one identical state hash per transaction; idle validators
+were cancelled only after quorum. Method-specific readback confirms review
+round `2` returned to `IDLE`, accepted notice count remained `1`, dependency
+verdict remained `USABLE`, and proposal `#3` returned to `ACTIVE`.
+`get_dependency_history(1)` records the attempted notice only as
+`latest_rejected_trigger`, with requester `0x277b...AC1b` and rejection code
+`NOTICE_NOT_BOUND_TO_ORIGINAL`. No accepted evidence or prior verdict was
+overwritten. This proves the advertised permissionless trigger and safe
+wrong-subject rejection path end to end.
+
+## Codex PRE_DEPLOY verdict — current revision
+
+Verdict: `APPROVED — PRE_DEPLOY`
+
+This verdict applies only to source package SHA-256
+`d460505c41edafa724112061b0b8f37ed1bba2590c9aaa89a2f84c79baaa4082` and
+contract source SHA-256
+`e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769`.
+
+Codex independently re-ran the repaired revision: GenVM lint and semantic
+validation PASS (21 methods, 11 view, 10 write); direct contract loader PASS
+(`RetractionDependency` resolves as a `gl.Contract` subclass); contract tests
+PASS (58/58); glsim live-web consensus and upgrade persistence PASS (4/4);
+frontend typecheck PASS; ESLint PASS with zero warnings; Vitest PASS (25/25);
+production build PASS; and Playwright PASS (5/5).
+
+The repair adds backward-compatible normalization for the integer
+representation that GenLayer Studio used for the `Address` constructor input,
+plus a regression test that exercises the exact integer round-trip. Frontend
+source, dependencies, and runtime configuration were unchanged at that
+checkpoint, but the source and test revision therefore received new hashes.
+The anonymous co-review AI subsequently approved the exact package, and the
+successful deployment evidence is recorded below.
+
+Reproduce with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\hash-source.ps1
+```
+
+## Current evidence scorecard
+
+This is the evidence scorecard approved at POST_DEPLOY_TEST. It is not the
+final submission scorecard.
+
+| Axis | Score | Evidence | Remaining weakness |
+|---|---:|---|---|
+| GenLayer fit | 5/5 | Consensus-critical semantic decision changes proposal eligibility; all three live semantic fixtures reached the expected on-chain consequences | Final public presentation review remains |
+| Contract quality | 5/5 | Exact deployed-source parity, upgrader readback, dual-source consensus, safe failures, 58 tests, and separate live upgrade persistence rehearsal | Final revision binding remains |
+| Engineering | 4/5 | Reproducible checks plus verified Studionet deployment/source parity | Exact Git revision and clean-checkout run do not exist yet |
+| Frontend / UX | 5/5 | Real multi-wallet Studionet journeys, strict finality/execution/readback guards, bounded RPC recovery, and visible reconciliation evidence | Public Vercel deployment remains |
+
+Deployment baseline: PASS. Live contract, semantic fixture, frontend-wallet,
+reconciliation, and separate upgrade-rehearsal evidence are verified.
+
+## Codex POST_DEPLOY_TEST verdict — current revision
+
+Verdict: `APPROVED — POST_DEPLOY_TEST`
+
+This verdict is bound to source package SHA-256
+`1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01`
+and contract source SHA-256
+`e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769`.
+
+Codex verified exact deployed-source parity, deployment and upgrader readback,
+the three live semantic fixture branches, permissionless safe re-review,
+authorized upgrade persistence, and every public write method. The final
+rehearsal CRUD state is proposal `#1` revision `5` with an empty
+proposal-scoped dependency list. Retained hashes were reconciled after
+transient Studionet failures; no duplicate write is accepted as evidence.
+
+The release rerun for this revision passed GenVM lint/semantic validation (21
+methods), 58 contract tests, TypeScript, ESLint with zero warnings, 49 Vitest
+tests, production build, six Playwright flows, `pip check`, secret scanning,
+and `npm audit --omit=dev` with zero vulnerabilities. GitHub and Vercel remain
+out of scope until the later identity, confirmation, and
+`POST_GITHUB_VERCEL_FINAL` gate.
+
+## POST_DEPLOY_TEST closure
+
+Codex and the anonymous co-review AI both returned
+`APPROVED — POST_DEPLOY_TEST` for source package SHA-256
+`1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01`
+and canonical evidence-package SHA-256
+`93ba9546e6d44ca19a70541ffafacbcfc9818d85feda7b38fb46838606d140c6`.
+The anonymous review reported no checkpoint-scoped blocker. This closes the
+live-integration checkpoint only; it is not final completion approval.
+
+Submission recommendation: NOT READY - an exact Git revision, public GitHub
+presentation, Vercel production deployment, POST_GITHUB_VERCEL_FINAL review,
+and final dual approval are still required. Any changed public documentation,
+configuration, dependency, or source belongs to the later exact revision and
+must be reviewed again there.
+
+## Known limitations
+
+- Studionet persistence is temporary.
+- Local glsim tests use live Crossref/Europe PMC web responses but deterministic
+  mocked LLM responses. The deployed Studionet fixture matrix separately proves
+  live semantic-provider behavior for all three locked evidence branches.
+- Crossref and Europe PMC availability/schema stability are external
+  dependencies; failures resolve safely but may delay liveness.
+- The configured Root Slot upgrader can replace contract code and is a disclosed
+  trust authority.
+- React Router was completely removed from production dependencies and source code to eliminate GHSA-qwww-vcr4-c8h2.
+  `npm audit --omit=dev` reports 0 production vulnerabilities.
+
+## PRE_DEPLOY closure
+
+Codex and the anonymous co-review AI both returned `APPROVED — PRE_DEPLOY` for
+source package
+`d460505c41edafa724112061b0b8f37ed1bba2590c9aaa89a2f84c79baaa4082` and
+contract source
+`e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769`.
+The Studio screenshot and RPC transaction confirm the selected wallet and
+Studionet deployment target were used.
+
+Selected deployment/upgrader wallet:
+
+`0x277bf20771129ae224042d23b0311c1ac5a9ac1b`
+
+Pre-deploy public RPC verification confirmed Studionet chain ID `61999`
+(`0xf22f`) and a non-zero wallet balance. No private key, seed phrase, or other
+credential is stored or required.
+
+The user explicitly authorized deployment of RetractionDependency to
+Studionet chain ID `61999` from the selected wallet, using that same address as
+the upgrader. This authorization does not bypass anonymous `PRE_DEPLOY` review
+or the final visible wallet/network check before signing.
+
+## Revision repair note
+
+The first Studio schema check on the prior revision returned `no contract
+defined` because `RetractionDependency` did not extend `gl.Contract`. Codex
+took over after three failed Antigravity attempts for the same acceptance
+criterion and applied the minimal inheritance correction. The corrected
+revision passes local lint/validation and direct contract loading, and Studio
+now exposes the `upgrader_address` constructor field and Deploy control.
+
+The prior anonymous `PRE_DEPLOY` approval covered source hash
+`3f0b7593c7ab1a0c69e7e41e81cdf89d2ad4d2fb9c7b0df23d0851e52b4d3055` and was not
+valid for the corrected source. The corrected package later received a fresh
+anonymous `PRE_DEPLOY` approval before the successful deployment recorded
+above.
+
+## Studionet constructor failure and repair
+
+Two user-run Studionet deployment attempts from the authorized wallet reached
+consensus but failed during GenVM constructor execution because Studio supplied
+`upgrader_address` as an integer to `Address(...)`:
+
+- `0xcb666e9b1c57d85aeab03fb2d6f00b23520a7154424d42bae630f04d576ffd16`
+- `0x4ff5c9135f64b5723334ed01f1cf9b898b630579ccf7d42a44b4740a3b93eb1c`
+
+Both attempts produced `OverflowError: cannot fit 'int' into an index-sized
+integer`, empty contract state, and no accepted contract address. They are
+retained as failed diagnostic evidence only and must not be used by the
+frontend or submission package.
