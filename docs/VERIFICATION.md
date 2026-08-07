@@ -564,10 +564,10 @@ revision and evidence package.
 
 ## POST_GITHUB_VERCEL_FINAL candidate
 
-The public V2 source was pushed at commit
-`80dd6ee89e820d728be8f5fb1410f1e573bf4848`. Vercel production deployment
-`dpl_EY2f4Y6AsksuG2AmEp173cnjmAN4` is `READY` and aliased to
-`https://retraction-dependency.vercel.app`. Its application bundle
+The public V2 implementation was pushed at commit
+`80dd6ee89e820d728be8f5fb1410f1e573bf4848`. Vercel Git integration uses
+`frontend` as its Root Directory, and the `READY` production build is aliased
+to `https://retraction-dependency.vercel.app`. Its application bundle
 `index-DXxQeneq.js` has SHA-256
 `7c3d3feaeac9f50669add94ce3cc417edc32861e267c64d50584a8bedac3d2a0`,
 which matches the local production build byte-for-byte and contains the exact

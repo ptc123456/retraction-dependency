@@ -54,7 +54,7 @@ judge-remediation behavior.
 | Rehearsal draft CRUD | PASS - edit proposal, add/edit/remove dependency, exact finality/execution/readback evidence |
 | Live web | [`https://retraction-dependency.vercel.app`](https://retraction-dependency.vercel.app) |
 | Vercel team / project | `shingg` / `retraction-dependency` |
-| Vercel deployment ID | `dpl_EY2f4Y6AsksuG2AmEp173cnjmAN4` |
+| Vercel Git Root Directory | `frontend` |
 | Vercel deployment status | `production` / `READY` |
 | Production application bundle | `index-DXxQeneq.js` / SHA-256 `7c3d3feaeac9f50669add94ce3cc417edc32861e267c64d50584a8bedac3d2a0` |
 
@@ -177,11 +177,12 @@ bundle contains the exact verified Studionet contract address and chain ID
 
 ## Remaining V2 release gate
 
-The V2 source is public at commit
+The V2 implementation is public at commit
 `80dd6ee89e820d728be8f5fb1410f1e573bf4848`, and the refreshed production
-deployment is recorded above. Only exact-revision Codex and anonymous
-`POST_GITHUB_VERCEL_FINAL` approval remains before the one permitted
-resubmission.
+alias and bundle are recorded above. The immutable final review package binds
+the documentation closure commit and exact deployment ID after Git/Vercel
+settle. Only exact-revision Codex and anonymous `POST_GITHUB_VERCEL_FINAL`
+approval remains before the one permitted resubmission.
 
 ### Historical V1 POST_DEPLOY_TEST closure
 
