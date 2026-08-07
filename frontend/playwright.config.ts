@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const contractAddress = process.env.PLAYWRIGHT_MODE === 'live'
+  ? process.env.PLAYWRIGHT_CONTRACT_ADDRESS ?? ''
+  : '';
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -8,15 +12,16 @@ export default defineConfig({
   workers: 1,
   reporter: 'line',
   use: {
-    baseURL: 'http://localhost:4173',
+    baseURL: 'http://127.0.0.1:43173',
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npx vite --host 127.0.0.1 --port 4173',
-    port: 4173,
-    reuseExistingServer: true,
+    command: 'npm run dev -- --host 127.0.0.1 --port 43173 --strictPort',
+    port: 43173,
+    reuseExistingServer: false,
+    timeout: 120_000,
     env: {
-      VITE_CONTRACT_ADDRESS: process.env.PLAYWRIGHT_CONTRACT_ADDRESS ?? '',
+      VITE_CONTRACT_ADDRESS: contractAddress,
     },
   },
   projects: [

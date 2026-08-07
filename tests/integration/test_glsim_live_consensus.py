@@ -9,6 +9,7 @@ provider credential. Run this file against `glsim --validators 3`.
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 import pytest
@@ -22,6 +23,14 @@ from gltest.utils import extract_contract_address
 
 
 CONTRACT_PATH = Path(__file__).parents[2] / "contracts" / "retraction_dependency.py"
+RETRYABLE_SOURCE_FAILURES = {
+    "MISSING_CROSSREF_RECORD",
+    "MISSING_EUROPE_PMC_RECORD",
+    "MISSING_OPEN_NOTICE_TEXT",
+    "SOURCE_CONFLICT",
+    "SOURCE_TEMPORARILY_UNAVAILABLE",
+    "SOURCE_RESPONSE_MALFORMED",
+}
 
 
 FIXTURES = [
@@ -92,7 +101,7 @@ def _wait(client, tx_hash):
         interval=250,
         retries=240,
     )
-    assert tx_execution_succeeded(receipt), receipt
+    assert tx_execution_succeeded(receipt), json.dumps(receipt, default=str, indent=2)
     return receipt
 
 
@@ -146,8 +155,45 @@ def _transaction_context(fixture: dict) -> dict:
     }
 
 
-@pytest.mark.parametrize("fixture", FIXTURES, ids=lambda item: f"fixture-{item['fixture']}")
-def test_locked_fixture_live_web_consensus(fixture):
+def _resolve_with_bounded_source_recovery(client, owner, contract_address, dependency_id, fixture):
+    """Retry only the contract's explicit safe source-failure outcomes."""
+    receipt = None
+    for attempt in range(3):
+        receipt = _transact(
+            client,
+            owner,
+            contract_address,
+            "resolve_review",
+            [dependency_id],
+            transaction_context=_transaction_context(fixture),
+        )
+        history = client.read_contract(
+            address=contract_address,
+            function_name="get_dependency_history",
+            account=owner,
+            args=[dependency_id],
+        )
+        if history["accepted_evaluations"]:
+            return receipt, history
+
+        latest = history.get("latest_rejected_trigger") or {}
+        if latest.get("rejection_code") not in RETRYABLE_SOURCE_FAILURES or attempt == 2:
+            return receipt, history
+
+        time.sleep(2**attempt)
+        _transact(
+            client,
+            owner,
+            contract_address,
+            "request_review",
+            [dependency_id, fixture["notice_doi"], fixture["notice_pmid"]],
+        )
+
+    raise AssertionError("bounded source recovery exhausted without a receipt")
+
+
+@pytest.fixture(scope="module")
+def deployed_contract():
     owner = get_default_account()
     client = get_gl_client()
     deploy_hash = client.deploy_contract(
@@ -155,7 +201,20 @@ def test_locked_fixture_live_web_consensus(fixture):
         account=owner,
         args=[owner.address],
     )
-    contract_address = extract_contract_address(_wait(client, deploy_hash))
+    return owner, client, extract_contract_address(_wait(client, deploy_hash))
+
+
+@pytest.mark.parametrize("fixture", FIXTURES, ids=lambda item: f"fixture-{item['fixture']}")
+def test_locked_fixture_live_web_consensus(fixture, deployed_contract):
+    owner, client, contract_address = deployed_contract
+    counts = client.read_contract(
+        address=contract_address,
+        function_name="get_counts",
+        account=owner,
+        args=[],
+    )
+    proposal_id = counts["proposals"] + 1
+    dependency_id = counts["dependencies"] + 1
 
     _transact(
         client,
@@ -176,7 +235,7 @@ def test_locked_fixture_live_web_consensus(fixture):
         contract_address,
         "add_dependency",
         [
-            1,
+            proposal_id,
             fixture["original_doi"],
             fixture["original_pmid"],
             fixture["dependency"],
@@ -184,27 +243,20 @@ def test_locked_fixture_live_web_consensus(fixture):
             fixture["notice_pmid"],
         ],
     )
-    _transact(client, owner, contract_address, "seal_proposal", [1])
+    _transact(client, owner, contract_address, "seal_proposal", [proposal_id])
 
-    receipt = _transact(
+    receipt, history = _resolve_with_bounded_source_recovery(
         client,
         owner,
         contract_address,
-        "resolve_review",
-        [1],
-        transaction_context=_transaction_context(fixture),
+        dependency_id,
+        fixture,
     )
     dependency = client.read_contract(
         address=contract_address,
         function_name="get_dependency",
         account=owner,
-        args=[1],
-    )
-    history = client.read_contract(
-        address=contract_address,
-        function_name="get_dependency_history",
-        account=owner,
-        args=[1],
+        args=[dependency_id],
     )
     accepted = history["accepted_evaluations"]
     assert len(accepted) == 1, {"dependency": dependency, "history": history}
@@ -221,17 +273,17 @@ def test_locked_fixture_live_web_consensus(fixture):
     assert set(votes.values()) == {"agree"}, consensus
 
 
-def test_glsim_upgrade_authorization_and_storage_persistence():
-    owner = get_default_account()
+def test_glsim_upgrade_authorization_and_storage_persistence(deployed_contract):
+    owner, client, contract_address = deployed_contract
     stranger = create_account()
-    client = get_gl_client()
     source = CONTRACT_PATH.read_bytes()
-    deploy_hash = client.deploy_contract(
-        code=source.decode("utf-8"),
+    counts = client.read_contract(
+        address=contract_address,
+        function_name="get_counts",
         account=owner,
-        args=[owner.address],
+        args=[],
     )
-    contract_address = extract_contract_address(_wait(client, deploy_hash))
+    proposal_id = counts["proposals"] + 1
 
     _transact(
         client,
@@ -272,7 +324,7 @@ def test_glsim_upgrade_authorization_and_storage_persistence():
         address=contract_address,
         function_name="get_proposal",
         account=owner,
-        args=[1],
+        args=[proposal_id],
     )
     assert proposal["title"] == "Upgrade rehearsal"
     assert proposal["revision"] == 1

@@ -1,4 +1,5 @@
 import pytest
+import sys
 from pathlib import Path
 from gltest.direct import VMContext, create_address, deploy_contract
 
@@ -34,7 +35,7 @@ def deploy(vm: VMContext, owner):
 
 
 def deploy_with_integer_address(vm: VMContext, owner):
-    owner_integer = int(str(owner), 16)
+    owner_integer = int.from_bytes(owner, "big") if isinstance(owner, bytes) else int(str(owner), 16)
     with vm.prank(owner):
         return deploy_contract(CONTRACT_PATH, vm, owner_integer)
 
@@ -72,6 +73,42 @@ def set_verdict(contract, dependency_id, verdict: str):
     contract.dependencies[dependency_id] = dependency
 
 
+def append_accepted_evaluation(contract, dependency_id, verdict: str, notice_doi: str, notice_pmid: str):
+    contract_module = next(
+        module for module in sys.modules.values() if hasattr(module, "EvaluationRecordData")
+    )
+    record_type = contract_module.EvaluationRecordData
+    dependency = contract.dependencies[dependency_id]
+    record = record_type(
+        dependency_id=dependency_id,
+        review_round=dependency.review_round,
+        policy_version=type(dependency.review_round)(1),
+        original_doi=dependency.original_doi,
+        original_pmid=dependency.original_pmid,
+        notice_doi=notice_doi,
+        notice_pmid=notice_pmid,
+        notice_pmcid="PMC123456",
+        update_kind="correction",
+        publication_date="2026-01-01",
+        crossref_relation="publisher relation",
+        europe_pmc_relation="commentCorrection relation",
+        binding_status="BOUND",
+        material_effect="MATERIALLY_UNDERMINES" if verdict == "INVALID_FOR_CLAIM" else "NO_MATERIAL_EFFECT",
+        verdict=verdict,
+        reason_code="CORRECTION_CHANGES_DEPENDENCY" if verdict == "INVALID_FOR_CLAIM" else "CORRECTION_UNRELATED_TO_DEPENDENCY",
+        reason_summary="Synthetic accepted history record for deterministic aggregation regression coverage.",
+        requester=dependency.pending_requester,
+        resolver=dependency.pending_requester,
+    )
+    contract.dependency_evaluations[dependency_id].append(record)
+    dependency.accepted_notice_count = type(dependency.accepted_notice_count)(
+        int(dependency.accepted_notice_count) + 1
+    )
+    dependency.verdict = verdict
+    dependency.review_status = "IDLE"
+    contract.dependencies[dependency_id] = dependency
+
+
 class TestProposalAndDependencyInputs:
     def test_constructor_accepts_studio_integer_address_roundtrip(self):
         vm = VMContext()
@@ -80,7 +117,8 @@ class TestProposalAndDependencyInputs:
 
         with vm.prank(owner):
             config = contract.get_deployment_config()
-            assert config["configured_upgrader"].lower() == str(owner).lower()
+            expected_owner = owner.as_hex if hasattr(owner, "as_hex") else f"0x{owner.hex()}"
+            assert config["configured_upgrader"].lower() == expected_owner.lower()
 
     def test_policy_counts_creation_and_normalization(self):
         vm = VMContext()
@@ -92,6 +130,8 @@ class TestProposalAndDependencyInputs:
             assert policy["policy_version"] == 1
             assert policy["max_dependencies_per_proposal"] == 5
             assert policy["max_notices_per_dependency"] == 3
+            assert policy["max_conclusive_rejections_per_dependency"] == 12
+            assert policy["permissionless_review_cooldown_seconds"] == 86400
             assert policy["supported_update_types"] == ["correction", "retraction"]
             assert contract.get_counts() == {"proposals": 0, "dependencies": 0}
 
@@ -294,11 +334,12 @@ class TestStateMachineAndPermissions:
             contract.seal_proposal(proposal_id)
             assert contract.get_dependency(dependency_id)["review_status"] == "PENDING"
 
-    def test_permissionless_review_request_only_when_sealed_and_idle(self):
+    def test_permissionless_review_request_only_when_sealed_and_idle(self, monkeypatch):
         vm = VMContext()
         owner = create_address("owner1")
         auditor = create_address("auditor")
         contract = deploy(vm, owner)
+        monkeypatch.setattr("time.time", lambda: 1_000_000)
         with vm.prank(owner):
             proposal_id = create_proposal(contract)
             dependency_id = add_dependency(contract, proposal_id)
@@ -319,6 +360,47 @@ class TestStateMachineAndPermissions:
             with vm.expect_revert():
                 contract.request_review(dependency_id, "10.1000/concurrent_notice", "66666")
 
+    def test_permissionless_cooldown_owner_bypass_and_elapsed_retry(self, monkeypatch):
+        vm = VMContext()
+        owner = create_address("owner1")
+        auditor = create_address("auditor")
+        contract = deploy(vm, owner)
+        now = 1_000_000
+        monkeypatch.setattr("time.time", lambda: now)
+
+        with vm.prank(owner):
+            proposal_id = create_proposal(contract)
+            dependency_id = add_dependency(contract, proposal_id)
+            contract.seal_proposal(proposal_id)
+            set_verdict(contract, dependency_id, "USABLE")
+
+        with vm.prank(auditor):
+            contract.request_review(dependency_id, "10.1000/auditor_notice", "55555")
+
+        pending = contract.dependencies[dependency_id]
+        pending.review_status = "IDLE"
+        contract.dependencies[dependency_id] = pending
+        view = contract.get_dependency(dependency_id)
+        assert view["last_permissionless_review_at"] == now
+        assert view["next_permissionless_review_at"] == now + 86400
+
+        with vm.prank(auditor):
+            with vm.expect_revert():
+                contract.request_review(dependency_id, "10.1000/griefing_notice", "66666")
+
+        with vm.prank(owner):
+            contract.request_review(dependency_id, "10.1000/owner_recovery", "77777")
+
+        pending = contract.dependencies[dependency_id]
+        pending.review_status = "IDLE"
+        contract.dependencies[dependency_id] = pending
+        now += 86401
+
+        with vm.prank(auditor):
+            contract.request_review(dependency_id, "10.1000/elapsed_notice", "88888")
+
+        assert contract.get_dependency(dependency_id)["review_status"] == "PENDING"
+
     def test_accepted_notice_limit_is_enforced_without_consuming_rejected_slots(self):
         vm = VMContext()
         owner = create_address("owner1")
@@ -333,6 +415,51 @@ class TestStateMachineAndPermissions:
             contract.dependencies[dependency_id] = dependency
             with vm.expect_revert():
                 contract.request_review(dependency_id, "10.1000/fourth_notice", "77777")
+
+    def test_full_history_invalidation_dominates_later_usable_notice_and_stale_cache(self):
+        vm = VMContext()
+        owner = create_address("owner1")
+        contract = deploy(vm, owner)
+        with vm.prank(owner):
+            proposal_id = create_proposal(contract)
+            dependency_id = add_dependency(contract, proposal_id)
+            contract.seal_proposal(proposal_id)
+            append_accepted_evaluation(
+                contract,
+                dependency_id,
+                "INVALID_FOR_CLAIM",
+                NOTICE_DOI,
+                NOTICE_PMID,
+            )
+            append_accepted_evaluation(
+                contract,
+                dependency_id,
+                "USABLE",
+                "10.1000/later_usable",
+                "99900001",
+            )
+
+        assert contract.get_dependency(dependency_id)["verdict"] == "INVALID_FOR_CLAIM"
+        assert contract.get_proposal(proposal_id)["invalid_dependencies"] == 1
+        assert contract.get_proposal_status(proposal_id)["status"] == "INVALIDATED"
+
+    def test_accepted_notice_identifier_cannot_be_replayed(self):
+        vm = VMContext()
+        owner = create_address("owner1")
+        contract = deploy(vm, owner)
+        with vm.prank(owner):
+            proposal_id = create_proposal(contract)
+            dependency_id = add_dependency(contract, proposal_id)
+            contract.seal_proposal(proposal_id)
+            append_accepted_evaluation(
+                contract,
+                dependency_id,
+                "USABLE",
+                NOTICE_DOI,
+                NOTICE_PMID,
+            )
+            with vm.expect_revert():
+                contract.request_review(dependency_id, NOTICE_DOI, NOTICE_PMID)
 
     def test_activation_owner_guard_and_all_usable_requirement(self):
         vm = VMContext()
@@ -439,8 +566,25 @@ class TestUpgradability:
         assert config["classification"] == "UPGRADABLE"
         expected_owner = owner.as_hex if hasattr(owner, "as_hex") else f"0x{owner.hex()}"
         assert config["configured_upgrader"].lower() == expected_owner.lower()
-        assert config["storage_layout_version"] == 1
+        assert config["storage_layout_version"] == 2
         assert "Append-only" in config["storage_compatibility_policy"]
+
+    def test_v2_migration_is_upgrader_only_and_idempotent(self):
+        vm = VMContext()
+        upgrader = create_address("external-upgrader")
+        stranger = create_address("stranger")
+        contract = deploy(vm, upgrader)
+        contract.storage_layout_version = 1
+
+        with vm.prank(stranger):
+            with pytest.raises(Exception, match="configured upgrader"):
+                contract.migrate_v2()
+
+        with vm.prank(upgrader):
+            contract.migrate_v2()
+            assert contract.get_deployment_config()["storage_layout_version"] == 2
+            with pytest.raises(Exception, match="already migrated"):
+                contract.migrate_v2()
 
     def test_zero_upgrader_is_rejected(self):
         vm = VMContext()

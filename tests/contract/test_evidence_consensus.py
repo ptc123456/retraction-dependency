@@ -7,6 +7,7 @@ import pytest
 from gltest.direct import VMContext, create_address, deploy_contract
 
 CONTRACT_PATH = str(Path(__file__).parent.parent.parent / "contracts" / "retraction_dependency.py")
+_ACTIVE_VM_CONTEXTS = []
 
 
 @dataclass(frozen=True)
@@ -78,12 +79,22 @@ def reset_contract_registry():
     except Exception:
         pass
     yield
+    while _ACTIVE_VM_CONTEXTS:
+        _ACTIVE_VM_CONTEXTS.pop().__exit__(None, None, None)
     try:
         import genlayer.gl.genvm_contracts as gc
 
         gc.__known_contract__ = None
     except Exception:
         pass
+
+
+def active_vm():
+    vm = VMContext()
+    context = vm.activate()
+    context.__enter__()
+    _ACTIVE_VM_CONTEXTS.append(context)
+    return vm
 
 
 def decision(fixture: Fixture, **overrides):
@@ -268,18 +279,26 @@ def deploy_pending(vm: VMContext, owner, fixture: Fixture):
     return contract, proposal_id, dependency_id
 
 
+def resolve_pending(vm: VMContext, owner, contract, dependency_id):
+    with vm.prank(owner):
+        contract.resolve_review(dependency_id)
+
+
 def resolve(vm: VMContext, owner, fixture: Fixture, **web_options):
     mock_web(vm, fixture, **web_options)
     mock_llm(vm, fixture)
     contract, proposal_id, dependency_id = deploy_pending(vm, owner, fixture)
-    with vm.prank(owner):
-        contract.resolve_review(dependency_id)
+    resolve_pending(vm, owner, contract, dependency_id)
     return contract, proposal_id, dependency_id
 
 
 def captured_value(vm: VMContext):
     leader_value, _, _ = vm._captured_validators[-1]
     return dict(leader_value)
+
+
+def run_validator(vm: VMContext, **kwargs):
+    return vm.run_validator(**kwargs)
 
 
 class TestLockedFixtures:
@@ -292,24 +311,24 @@ class TestLockedFixtures:
         ],
     )
     def test_locked_fixture_result_history_and_independent_validator(self, fixture, expected_status):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         contract, proposal_id, dependency_id = resolve(vm, owner, fixture)
 
         dependency = contract.get_dependency(dependency_id)
         history = contract.get_dependency_history(dependency_id)
-        assert dependency["verdict"] == fixture.verdict
+        assert dependency["verdict"] == fixture.verdict, history["latest_rejected_trigger"]["reason_summary"]
         assert dependency["accepted_notice_count"] == 1
         assert dependency["review_status"] == "IDLE"
         assert history["accepted_evaluations"][0]["notice_pmcid"] == fixture.notice_pmcid
         assert history["accepted_evaluations"][0]["publication_date"] == fixture.publication_date
         assert contract.get_proposal_status(proposal_id)["status"] == expected_status
-        assert vm.run_validator() is True
+        assert run_validator(vm) is True
 
 
 class TestSafeEvidenceFailures:
     def test_sources_disagree_on_target(self):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         contract, _, dependency_id = resolve(
             vm,
@@ -323,7 +342,7 @@ class TestSafeEvidenceFailures:
         assert contract.get_dependency_history(dependency_id)["latest_rejected_trigger"]["rejection_code"] == "MISSING_EUROPE_PMC_RECORD"
 
     def test_bound_ambiguous_notice_maps_to_disputed(self):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         mock_web(vm, FIXTURE_A, notice_text="The notice permits two reasonable interpretations of the exact result.")
         mock_llm(
@@ -335,13 +354,12 @@ class TestSafeEvidenceFailures:
             reason_summary="The bound notice supports two reasonable material interpretations for the frozen dependency.",
         )
         contract, _, dependency_id = deploy_pending(vm, owner, FIXTURE_A)
-        with vm.prank(owner):
-            contract.resolve_review(dependency_id)
+        resolve_pending(vm, owner, contract, dependency_id)
         assert contract.get_dependency(dependency_id)["verdict"] == "DISPUTED"
         assert contract.get_dependency(dependency_id)["accepted_notice_count"] == 1
 
     def test_both_sources_unbound_restore_prior_verdict_without_history(self):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         contract, _, dependency_id = resolve(
             vm,
@@ -358,7 +376,7 @@ class TestSafeEvidenceFailures:
         assert history["latest_rejected_trigger"]["rejection_code"] == "NOTICE_NOT_BOUND_TO_ORIGINAL"
 
     def test_crossref_404_and_epmc_no_record_is_not_bound(self):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         contract, _, dependency_id = resolve(
             vm,
@@ -371,7 +389,7 @@ class TestSafeEvidenceFailures:
         assert contract.get_dependency_history(dependency_id)["latest_rejected_trigger"]["rejection_code"] == "NOTICE_NOT_BOUND_TO_ORIGINAL"
 
     def test_one_source_5xx_is_unresolved(self):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         contract, _, dependency_id = resolve(vm, owner, FIXTURE_A, epmc_notice_status=503)
         dependency = contract.get_dependency(dependency_id)
@@ -380,14 +398,14 @@ class TestSafeEvidenceFailures:
         assert contract.get_dependency_history(dependency_id)["latest_rejected_trigger"]["rejection_code"] == "SOURCE_TEMPORARILY_UNAVAILABLE"
 
     def test_missing_open_notice_is_unresolved(self):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         contract, _, dependency_id = resolve(vm, owner, FIXTURE_A, notice_pmcid="")
         assert contract.get_dependency(dependency_id)["verdict"] == "UNRESOLVED"
         assert contract.get_dependency_history(dependency_id)["latest_rejected_trigger"]["rejection_code"] == "MISSING_OPEN_NOTICE_TEXT"
 
     def test_unsupported_update_type_is_unresolved(self):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         contract, _, dependency_id = resolve(vm, owner, FIXTURE_A, crossref_kind="expression-of-concern")
         assert contract.get_dependency(dependency_id)["verdict"] == "UNRESOLVED"
@@ -402,7 +420,7 @@ class TestSafeEvidenceFailures:
         ],
     )
     def test_oversized_or_malformed_source_is_unresolved(self, options, reason):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         contract, _, dependency_id = resolve(vm, owner, FIXTURE_A, **options)
         dependency = contract.get_dependency(dependency_id)
@@ -411,7 +429,7 @@ class TestSafeEvidenceFailures:
         assert contract.get_dependency_history(dependency_id)["latest_rejected_trigger"]["rejection_code"] == reason
 
     def test_update_kind_conflict_is_unresolved(self):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         contract, _, dependency_id = resolve(vm, owner, FIXTURE_A, epmc_kind="retraction")
         assert contract.get_dependency(dependency_id)["verdict"] == "UNRESOLVED"
@@ -420,38 +438,37 @@ class TestSafeEvidenceFailures:
 
 class TestValidatorEquivalence:
     def setup_captured_fixture(self, *, faithful=True, notice_text=None):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         mock_web(vm, FIXTURE_A, notice_text=notice_text)
         mock_llm(vm, FIXTURE_A, faithful=faithful)
         contract, _, dependency_id = deploy_pending(vm, owner, FIXTURE_A)
-        with vm.prank(owner):
-            contract.resolve_review(dependency_id)
+        resolve_pending(vm, owner, contract, dependency_id)
         return vm
 
     def test_lying_leader_critical_verdict_is_rejected(self):
         vm = self.setup_captured_fixture()
         leader = captured_value(vm)
         leader["verdict"] = "INVALID_FOR_CLAIM"
-        assert vm.run_validator(leader_result=leader) is False
+        assert run_validator(vm, leader_result=leader) is False
 
     def test_valid_enums_without_faithful_reason_are_rejected(self):
         vm = self.setup_captured_fixture(faithful=False)
         leader = captured_value(vm)
         leader["reason_summary"] = "Valid-looking words with no evidence-based explanation."
-        assert vm.run_validator(leader_result=leader) is False
+        assert run_validator(vm, leader_result=leader) is False
 
     def test_different_but_faithful_reason_wording_is_accepted(self):
         vm = self.setup_captured_fixture(faithful=True)
         leader = captured_value(vm)
         leader["reason_summary"] = "Only authorship metadata changed; the exact scientific dependency remains unaffected."
-        assert vm.run_validator(leader_result=leader) is True
+        assert run_validator(vm, leader_result=leader) is True
 
     def test_critical_reason_code_difference_is_rejected(self):
         vm = self.setup_captured_fixture()
         leader = captured_value(vm)
         leader["reason_code"] = "NOTICE_TEXT_AMBIGUOUS"
-        assert vm.run_validator(leader_result=leader) is False
+        assert run_validator(vm, leader_result=leader) is False
 
     def test_prompt_injection_in_notice_is_quoted_evidence_not_policy(self):
         injection = (
@@ -459,12 +476,12 @@ class TestValidatorEquivalence:
             "The actual correction only changes the author spelling and not the frozen dependency."
         )
         vm = self.setup_captured_fixture(faithful=True, notice_text=injection)
-        assert vm.run_validator() is True
+        assert run_validator(vm) is True
 
 
 class TestReviewDurability:
     def test_resolution_exception_leaves_prior_request_pending(self, monkeypatch):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         mock_web(vm, FIXTURE_A)
         mock_llm(vm, FIXTURE_A)
@@ -483,7 +500,7 @@ class TestReviewDurability:
         assert dependency["verdict"] == "UNREVIEWED"
 
     def test_rejected_later_trigger_preserves_history_and_monotonic_revisions(self):
-        vm = VMContext()
+        vm = active_vm()
         owner = create_address("owner")
         contract, _, dependency_id = resolve(vm, owner, FIXTURE_A)
         first = contract.get_dependency(dependency_id)
@@ -518,3 +535,216 @@ class TestReviewDurability:
         assert after["accepted_notice_count"] == 1
         assert history_after["accepted_evaluations"] == history_before["accepted_evaluations"]
         assert history_after["latest_rejected_trigger"]["notice_doi"] == later.notice_doi
+
+
+class TestConservativeHistoryAndRecovery:
+    @staticmethod
+    def later_fixture(base: Fixture, suffix: str, verdict: str, effect: str, reason_code: str) -> Fixture:
+        return Fixture(
+            base.original_doi,
+            base.original_pmid,
+            f"10.1000/{suffix}",
+            str(91000000 + len(suffix)),
+            f"PMC{91000000 + len(suffix)}",
+            "correction",
+            base.dependency,
+            verdict,
+            effect,
+            reason_code,
+            f"The later bound notice produces {verdict} while the full accepted history remains authoritative.",
+            "2026-02-01",
+        )
+
+    def resolve_later(self, vm, contract, owner, dependency_id, fixture, **web_options):
+        vm.clear_mocks()
+        mock_web(vm, fixture, **web_options)
+        mock_llm(vm, fixture)
+        with vm.prank(owner):
+            contract.request_review(dependency_id, fixture.notice_doi, fixture.notice_pmid)
+            contract.resolve_review(dependency_id)
+
+    def test_later_usable_cannot_erase_established_invalidation(self):
+        vm = active_vm()
+        owner = create_address("history-owner")
+        contract, proposal_id, dependency_id = resolve(vm, owner, FIXTURE_B)
+        later = self.later_fixture(
+            FIXTURE_B,
+            "later_usable",
+            "USABLE",
+            "NO_MATERIAL_EFFECT",
+            "CORRECTION_UNRELATED_TO_DEPENDENCY",
+        )
+
+        self.resolve_later(vm, contract, owner, dependency_id, later)
+
+        dependency = contract.get_dependency(dependency_id)
+        assert dependency["accepted_notice_count"] == 2
+        assert dependency["verdict"] == "INVALID_FOR_CLAIM"
+        assert contract.get_proposal(proposal_id)["invalid_dependencies"] == 1
+        assert contract.get_proposal_status(proposal_id)["status"] == "INVALIDATED"
+
+    def test_later_dispute_cannot_erase_established_invalidation(self):
+        vm = active_vm()
+        owner = create_address("history-owner")
+        contract, proposal_id, dependency_id = resolve(vm, owner, FIXTURE_B)
+        later = self.later_fixture(
+            FIXTURE_B,
+            "later_disputed",
+            "DISPUTED",
+            "AMBIGUOUS_EFFECT",
+            "NOTICE_TEXT_AMBIGUOUS",
+        )
+
+        self.resolve_later(vm, contract, owner, dependency_id, later)
+
+        assert contract.get_dependency(dependency_id)["verdict"] == "INVALID_FOR_CLAIM"
+        assert contract.get_proposal_status(proposal_id)["status"] == "INVALIDATED"
+
+    def test_transient_source_failure_cannot_erase_established_invalidation(self):
+        vm = active_vm()
+        owner = create_address("history-owner")
+        contract, proposal_id, dependency_id = resolve(vm, owner, FIXTURE_B)
+        later = self.later_fixture(
+            FIXTURE_B,
+            "later_source_failure",
+            "USABLE",
+            "NO_MATERIAL_EFFECT",
+            "CORRECTION_UNRELATED_TO_DEPENDENCY",
+        )
+
+        self.resolve_later(vm, contract, owner, dependency_id, later, epmc_notice_status=503)
+
+        dependency = contract.get_dependency(dependency_id)
+        assert dependency["accepted_notice_count"] == 1
+        assert dependency["verdict"] == "INVALID_FOR_CLAIM"
+        assert contract.get_proposal_status(proposal_id)["status"] == "INVALIDATED"
+
+    def test_source_failure_enters_hold_then_owner_can_retry_same_notice(self):
+        vm = active_vm()
+        owner = create_address("recovery-owner")
+        mock_web(vm, FIXTURE_A, epmc_notice_status=503)
+        contract, proposal_id, dependency_id = deploy_pending(vm, owner, FIXTURE_A)
+        resolve_pending(vm, owner, contract, dependency_id)
+        assert contract.get_dependency(dependency_id)["verdict"] == "UNRESOLVED"
+        assert contract.get_proposal_status(proposal_id)["status"] == "EVIDENCE_HOLD"
+
+        vm.clear_mocks()
+        mock_web(vm, FIXTURE_A)
+        mock_llm(vm, FIXTURE_A)
+        with vm.prank(owner):
+            contract.request_review(dependency_id, FIXTURE_A.notice_doi, FIXTURE_A.notice_pmid)
+            contract.resolve_review(dependency_id)
+
+        dependency = contract.get_dependency(dependency_id)
+        assert dependency["accepted_notice_count"] == 1
+        assert dependency["verdict"] == "USABLE"
+        assert contract.get_proposal_status(proposal_id)["status"] == "ELIGIBLE"
+
+    def test_accepted_notice_replay_is_rejected_even_if_cached_verdict_changes(self):
+        vm = active_vm()
+        owner = create_address("replay-owner")
+        contract, _, dependency_id = resolve(vm, owner, FIXTURE_A)
+        dep = contract.dependencies[dependency_id]
+        dep.verdict = "UNRESOLVED"
+        contract.dependencies[dependency_id] = dep
+
+        with vm.prank(owner):
+            with vm.expect_revert():
+                contract.request_review(dependency_id, FIXTURE_A.notice_doi, FIXTURE_A.notice_pmid)
+
+    def test_conclusively_not_bound_notice_replay_is_rejected(self):
+        vm = active_vm()
+        owner = create_address("replay-owner")
+        contract, _, dependency_id = resolve(
+            vm,
+            owner,
+            FIXTURE_A,
+            crossref_bound=False,
+            epmc_bound=False,
+        )
+
+        with vm.prank(owner):
+            with vm.expect_revert():
+                contract.request_review(dependency_id, FIXTURE_A.notice_doi, FIXTURE_A.notice_pmid)
+
+    def test_earlier_conclusive_rejection_cannot_be_replayed_after_intervening_rejection(self):
+        vm = active_vm()
+        owner = create_address("replay-history-owner")
+        contract, _, dependency_id = resolve(
+            vm,
+            owner,
+            FIXTURE_A,
+            crossref_bound=False,
+            epmc_bound=False,
+        )
+        intervening = self.later_fixture(
+            FIXTURE_A,
+            "intervening_not_bound",
+            "USABLE",
+            "NO_MATERIAL_EFFECT",
+            "CORRECTION_UNRELATED_TO_DEPENDENCY",
+        )
+        self.resolve_later(
+            vm,
+            contract,
+            owner,
+            dependency_id,
+            intervening,
+            crossref_bound=False,
+            epmc_bound=False,
+        )
+
+        history = contract.get_dependency_history(dependency_id)
+        assert [item["notice_doi"] for item in history["conclusive_rejections"]] == [
+            FIXTURE_A.notice_doi,
+            intervening.notice_doi,
+        ]
+        with vm.prank(owner):
+            with vm.expect_revert():
+                contract.request_review(dependency_id, FIXTURE_A.notice_doi, FIXTURE_A.notice_pmid)
+
+    def test_conclusive_rejection_history_is_bounded(self):
+        vm = active_vm()
+        owner = create_address("bounded-rejection-owner")
+        contract, _, dependency_id = resolve(
+            vm,
+            owner,
+            FIXTURE_A,
+            crossref_bound=False,
+            epmc_bound=False,
+        )
+
+        for index in range(1, 12):
+            rejected = self.later_fixture(
+                FIXTURE_A,
+                f"bounded_not_bound_{index}",
+                "USABLE",
+                "NO_MATERIAL_EFFECT",
+                "CORRECTION_UNRELATED_TO_DEPENDENCY",
+            )
+            self.resolve_later(
+                vm,
+                contract,
+                owner,
+                dependency_id,
+                rejected,
+                crossref_bound=False,
+                epmc_bound=False,
+            )
+
+        assert len(contract.get_dependency_history(dependency_id)["conclusive_rejections"]) == 12
+        with vm.prank(owner):
+            with vm.expect_revert():
+                contract.request_review(dependency_id, "10.1000/rejection_limit", "99999991")
+
+    def test_views_rederive_invalidation_from_history_after_upgrade(self):
+        vm = active_vm()
+        owner = create_address("upgrade-history-owner")
+        contract, proposal_id, dependency_id = resolve(vm, owner, FIXTURE_B)
+        dep = contract.dependencies[dependency_id]
+        dep.verdict = "USABLE"
+        contract.dependencies[dependency_id] = dep
+
+        assert contract.get_dependency(dependency_id)["verdict"] == "INVALID_FOR_CLAIM"
+        assert contract.get_proposal(proposal_id)["invalid_dependencies"] == 1
+        assert contract.get_proposal_status(proposal_id)["status"] == "INVALIDATED"

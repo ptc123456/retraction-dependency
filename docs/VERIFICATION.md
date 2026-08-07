@@ -1,12 +1,117 @@
 # RetractionDependency verification
 
-Checkpoint status: POST_GITHUB_VERCEL_FINAL — CODEX APPROVED; ANONYMOUS PENDING
+Checkpoint status: JUDGE_FEEDBACK_REPAIR — POST_DEPLOY_TEST EVIDENCE PREPARATION
 
 Category: `PROJECT`
 
-The Studionet contract, public GitHub repository, production Vercel frontend,
-and live readback are verified. Anonymous final completion approval remains
-pending at this checkpoint.
+The prior V1 release evidence remains historical. The V2 judge-feedback repair
+received exact-revision Codex and anonymous `PRE_DEPLOY` approval, then the
+existing Studionet contract was upgraded and migrated in place. This document
+keeps the V1 chronology separate from the new V2 evidence.
+
+## Judge-feedback repair candidate
+
+The candidate closes the requested issues by deriving effective dependency
+status from the full accepted history, preserving established invalidation
+across later notices and transient source failures, applying a 24-hour
+permissionless review cooldown with owner recovery, and rejecting accepted or
+conclusively rejected notice replays. The detailed requirement-to-test mapping
+is in [`JUDGE-FEEDBACK-REMEDIATION.md`](JUDGE-FEEDBACK-REMEDIATION.md).
+
+Candidate local evidence:
+
+| Check | Result |
+|---|---|
+| GenVM lint and semantic validation | PASS - 22 methods (11 view, 11 write) |
+| Deterministic contract/consensus tests | PASS - 71/71 |
+| glsim live-web fixtures and upgrade persistence | PASS - 4/4 |
+| Frontend TypeScript and ESLint | PASS |
+| Vitest | PASS - 50/50 |
+| Production Vite build | PASS |
+| Playwright Chromium | PASS - 6/6 |
+
+Candidate source, contract, specification, recovery, remediation-document,
+verification, deployment-manifest, and canonical review-manifest hashes are recorded in
+`docs/PREDEPLOY-REVIEW-MANIFEST.txt` after the final calculation.
+
+- Candidate source package: `07bfec1a792e2762a09d491d19028df03f3bed9af82e38fa3dd21fc13348779f`
+- Contract source: `86152374413bd1cf5d3e2a68e5278130026e6f3d759df17df230fcf0f0cce03a`
+- Judge-remediation document: `da80c292ed6aa1384c0ebfc057ce8ac3eb461d0d66400b094a4d13a701dc0362`
+
+### Codex PRE_DEPLOY verdict — V2 judge-feedback repair
+
+Verdict: `APPROVED — PRE_DEPLOY`
+
+This replacement verdict is bound to the candidate source, contract,
+specification, recovery, and remediation-document hashes plus the verification
+and deployment-manifest hashes in the canonical review manifest. The
+specification now identifies the historical V1 target, the PRE_DEPLOY V2
+boundary, fresh layout version `2`, and the authorized V1-to-V2 migration.
+Codex verified the
+judge's full-history, anti-griefing, successive-notice, repeated-request, and
+source-failure-recovery requirements; append-only V1-to-V2 storage
+compatibility; all local checks in the candidate matrix; production audit with
+zero vulnerabilities; public-repository boundary; and secret scan. The
+`time.time()` lint warning is accepted because GenVM pins the standard clock
+to transaction time for deterministic consensus.
+
+The anonymous co-reviewer also returned `APPROVED — PRE_DEPLOY` for the exact
+source package and contract hash above. That approval authorized only the next
+checkpoint; the V2 deployment and live behavior are verified separately below.
+
+## V2 judge-feedback POST_DEPLOY evidence
+
+| Evidence | Verified result |
+|---|---|
+| Contract | `0xcEe31f6b4B1718445b2480C56940cCF72912a410` on Studionet `61999` |
+| Upgrade | `0x48d2288668a2a0c4ceb1680e495e63e980a4688dcd532bb61274870a77c3e213`: `FINALIZED`, `MAJORITY_AGREE`, leader `SUCCESS` |
+| Migration | `0xd83bf6bce01c512da3922c8e8ecc61c16095edb264e6d6ef2d8a990d588253a1`: `FINALIZED`, `MAJORITY_AGREE`, leader `SUCCESS` |
+| Deployed-source parity | 67,985 bytes; SHA-256 `86152374413bd1cf5d3e2a68e5278130026e6f3d759df17df230fcf0f0cce03a`, exact local contract match |
+| Configuration readback | `UPGRADABLE`; configured upgrader `0x277bF20771129ae224042d23b0311C1AC5a9AC1b`; layout `2` |
+| Preserved state | Five proposals and three dependencies before and after migration |
+| Conservative history | Dependency `#2` retains its accepted `INVALID_FOR_CLAIM`; proposal `#4` remains `INVALIDATED` after two later unbound notices |
+| Persistent replay history | Dependency `#2` retains both conclusive rejections; the first pair remains blocked after the second rejection |
+| Permissionless cooldown | Non-owner second-notice request rolled back during cooldown; proposal owner opened the same review without changing the stored non-owner timestamp |
+| Final readback | Dependency `#2`: `IDLE`, round `3`, accepted notices `1`, two conclusive rejections, verdict `INVALID_FOR_CLAIM`; proposal `#4`: revision `8`, `INVALIDATED` |
+
+V2 live transaction sequence:
+
+1. Non-owner request `0x212b9a595853e38ace5d26f026694da8803a1fb6cfc8420b735122fa014d6abe` finalized successfully.
+2. Resolution `0x9cc52f74873d14506aae2b0913d532af29e0ef676729c04c37b9abb3de966bca` stored `NOTICE_NOT_BOUND_TO_ORIGINAL`.
+3. Replay `0x060894f519b4a1cb8572b81e3ccc78681755829ada78d23afd1d833934dcf41c` rolled back as already conclusively rejected.
+4. Permissionless cooldown attempt `0xe0c23fcd87811959306436bad694b999661d3c6b815361bfb0916774bf8e28a0` rolled back.
+5. Owner request `0x093c6b1d2fc145d9cd5fc309c251446906901a303846cc507b33ae0adff1800f` opened round `3` despite the permissionless cooldown.
+6. Owner resolution `0xc56cfd185bd2a50afbbcfa2198a992fba86972f2d863aa8348d492e026b05451` stored the second conclusive rejection.
+7. Earlier-pair replay `0xc0f98f50791eb2e424952a343843755c1cca3df90e819ecacc16286ce7fdf80c` rolled back, proving persistent full-history replay protection.
+
+The exact deployed contract also passed 71 deterministic contract tests,
+including successive invalid-to-usable/disputed/source-failure histories,
+source-failure recovery, replay, cooldown, owner bypass, the twelve-record cap,
+and stale-cache derivation. Live source outages were not manufactured on
+Studionet; this evidence claim is limited to deterministic recovery coverage
+plus exact deployed-code parity.
+
+### Codex POST_DEPLOY_TEST verdict — V2 judge-feedback repair
+
+Verdict: `APPROVED — POST_DEPLOY_TEST`
+
+This verdict is bound to source package SHA-256
+`5bb5e826bb93cf529a0ff99156eb68410a6796a374aab8f6df5e22332b27adb8`,
+contract source SHA-256
+`86152374413bd1cf5d3e2a68e5278130026e6f3d759df17df230fcf0f0cce03a`,
+the transactions and final state readback above, and the component hashes in
+`POSTDEPLOY-REVIEW-MANIFEST.txt`.
+
+Codex independently rechecked deployed-source parity, upgrade and migration
+authorization, finality, majority agreement, leader execution success, layout
+and preserved-state readback, every live anti-griefing scenario, the complete
+local release suite, production dependency audit, secret scan, and current
+official Studionet network values. No V2 source-failure outage is claimed as a
+live test. This is checkpoint approval only; independent anonymous
+`POST_DEPLOY_TEST` approval is still required before public push and Vercel
+refresh.
+
+## Historical V1 release evidence
 
 ## Trust and chain authority
 

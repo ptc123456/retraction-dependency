@@ -59,6 +59,8 @@ export const DependencySchema = z.object({
   reviewRound: z.number().int().min(0),
   revision: z.number().int().positive(),
   pendingRequester: AddressSchema,
+  lastPermissionlessReviewAt: z.number().int().min(0),
+  nextPermissionlessReviewAt: z.number().int().min(0),
 });
 export type Dependency = z.infer<typeof DependencySchema>;
 
@@ -104,6 +106,7 @@ export const DependencyHistorySchema = z.object({
   dependencyId: z.number().int().positive(),
   acceptedEvaluations: z.array(EvaluationRecordSchema).max(3),
   latestRejectedTrigger: RejectedTriggerSchema.nullable(),
+  conclusiveRejections: z.array(RejectedTriggerSchema).max(12),
 });
 export type DependencyHistory = z.infer<typeof DependencyHistorySchema>;
 
@@ -113,6 +116,7 @@ export const PolicySchema = z.object({
   sourcePolicy: z.literal('CROSSREF_PLUS_EUROPE_PMC_OPEN_NOTICE'),
   maxDependenciesPerProposal: z.number().int().min(1).max(5),
   maxNoticesPerDependency: z.number().int().min(1).max(3),
+  permissionlessReviewCooldownSeconds: z.number().int().positive(),
   inputBounds: z.record(z.union([z.number(), z.array(z.number())])),
   verdicts: z.array(VerdictSchema),
   safeFailure: z.record(z.string()),

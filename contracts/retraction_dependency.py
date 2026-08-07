@@ -5,10 +5,14 @@ from genlayer.py.storage import TreeMap, DynArray, allow_storage
 from dataclasses import dataclass
 import json
 import re
+import time
 
 POLICY_VERSION_INT = 1
+STORAGE_LAYOUT_VERSION_INT = 2
 MAX_DEPENDENCIES_PER_PROPOSAL_INT = 5
 MAX_NOTICES_PER_DEPENDENCY_INT = 3
+MAX_CONCLUSIVE_REJECTIONS_PER_DEPENDENCY_INT = 12
+REVIEW_REQUEST_COOLDOWN_SECONDS_INT = 86400
 TITLE_MIN_LENGTH = 3
 TITLE_MAX_LENGTH = 120
 CLAIM_MIN_LENGTH = 20
@@ -66,6 +70,15 @@ VALID_REASON_CODES = {
     REASON_SOURCE_UNAVAILABLE,
     REASON_RESPONSE_MALFORMED,
     REASON_MAX_NOTICE_LIMIT,
+}
+
+RETRYABLE_REJECTION_CODES = {
+    REASON_MISSING_CROSSREF,
+    REASON_MISSING_EUROPE_PMC,
+    REASON_MISSING_OPEN_TEXT,
+    REASON_SOURCE_CONFLICT,
+    REASON_SOURCE_UNAVAILABLE,
+    REASON_RESPONSE_MALFORMED,
 }
 
 
@@ -221,6 +234,11 @@ class RetractionDependency(gl.Contract):
     dependency_count: u256
     configured_upgrader: Address
     storage_layout_version: u256
+    # V2 append-only storage: last successful permissionless review request.
+    permissionless_review_last_requested_at: TreeMap[u256, u256]
+    # V2 append-only storage: bounded permanent replay protection for
+    # conclusively rejected DOI/PMID pairs.
+    conclusive_rejected_triggers: TreeMap[u256, DynArray[RejectedTriggerData]]
 
     def __init__(self, upgrader_address: Address):
         upgrader = _normalize_constructor_address(upgrader_address)
@@ -229,7 +247,7 @@ class RetractionDependency(gl.Contract):
         self.proposal_count = u256(0)
         self.dependency_count = u256(0)
         self.configured_upgrader = upgrader
-        self.storage_layout_version = u256(1)
+        self.storage_layout_version = u256(STORAGE_LAYOUT_VERSION_INT)
 
         # VERIFY-AT-STUDIO: confirm Root Slot registration and configured address
         # through live Studionet deployment readback before accepting deployment.
@@ -422,6 +440,10 @@ class RetractionDependency(gl.Contract):
             del self.dependency_evaluations[dependency_id]
         if dependency_id in self.latest_rejected_triggers:
             del self.latest_rejected_triggers[dependency_id]
+        if dependency_id in self.permissionless_review_last_requested_at:
+            del self.permissionless_review_last_requested_at[dependency_id]
+        if dependency_id in self.conclusive_rejected_triggers:
+            del self.conclusive_rejected_triggers[dependency_id]
         p.revision = u256(int(p.revision) + 1)
         self.proposals[dep.proposal_id] = p
 
@@ -477,12 +499,39 @@ class RetractionDependency(gl.Contract):
         if int(dep.accepted_notice_count) >= MAX_NOTICES_PER_DEPENDENCY_INT:
             raise gl.vm.UserError(REASON_MAX_NOTICE_LIMIT)
 
-        if dep.verdict not in [VERDICT_DISPUTED, VERDICT_UNRESOLVED]:
-            for ev in evals:
-                if ev.notice_doi == norm_notice_doi:
-                    raise gl.vm.UserError("Notice has already been accepted for this dependency")
+        for ev in evals:
+            if ev.notice_doi == norm_notice_doi and ev.notice_pmid == norm_notice_pmid:
+                raise gl.vm.UserError("Notice has already been accepted for this dependency")
+
+        conclusive_rejections = (
+            self.conclusive_rejected_triggers[dependency_id]
+            if dependency_id in self.conclusive_rejected_triggers
+            else []
+        )
+        for rejected in conclusive_rejections:
+            if rejected.notice_doi == norm_notice_doi and rejected.notice_pmid == norm_notice_pmid:
+                raise gl.vm.UserError("Notice has already received a conclusive rejection")
+        if len(conclusive_rejections) >= MAX_CONCLUSIVE_REJECTIONS_PER_DEPENDENCY_INT:
+            raise gl.vm.UserError("Maximum conclusive rejection history reached for this dependency")
+
+        if dependency_id in self.latest_rejected_triggers:
+            rejected = self.latest_rejected_triggers[dependency_id]
+            if rejected.notice_doi == norm_notice_doi and rejected.notice_pmid == norm_notice_pmid:
+                if rejected.rejection_code not in RETRYABLE_REJECTION_CODES:
+                    raise gl.vm.UserError("Notice has already received a conclusive rejection")
 
         sender = gl.message.sender_address
+        if sender != p.owner:
+            now = int(time.time())
+            last_requested_at = (
+                int(self.permissionless_review_last_requested_at[dependency_id])
+                if dependency_id in self.permissionless_review_last_requested_at
+                else 0
+            )
+            if last_requested_at > 0 and now < last_requested_at + REVIEW_REQUEST_COOLDOWN_SECONDS_INT:
+                raise gl.vm.UserError("Permissionless review cooldown is active for this dependency")
+            self.permissionless_review_last_requested_at[dependency_id] = u256(now)
+
         dep.pending_notice_doi = norm_notice_doi
         dep.pending_notice_pmid = norm_notice_pmid
         dep.review_status = "PENDING"
@@ -563,8 +612,6 @@ class RetractionDependency(gl.Contract):
         dep.revision = u256(int(dep.revision) + 1)
 
         if binding_status == BINDING_NOT_BOUND:
-            # Preserves prior verdict!
-            dep.verdict = prior_verdict
             rejected_record = RejectedTriggerData(
                 dependency_id=dependency_id,
                 notice_doi=notice_doi,
@@ -574,9 +621,12 @@ class RetractionDependency(gl.Contract):
                 requester=stored_requester,
             )
             self.latest_rejected_triggers[dependency_id] = rejected_record
+            if dependency_id not in self.conclusive_rejected_triggers:
+                self.conclusive_rejected_triggers[dependency_id] = []
+            conclusive_history = self.conclusive_rejected_triggers[dependency_id]
+            conclusive_history.append(rejected_record)
+            dep.verdict = self._derive_effective_verdict(dependency_id, prior_verdict)
         elif binding_status != BINDING_BOUND:
-            # Unresolved or conflicting binding: set verdict = UNRESOLVED, do NOT increment count or append accepted history!
-            dep.verdict = VERDICT_UNRESOLVED
             rejected_record = RejectedTriggerData(
                 dependency_id=dependency_id,
                 notice_doi=notice_doi,
@@ -586,9 +636,10 @@ class RetractionDependency(gl.Contract):
                 requester=stored_requester,
             )
             self.latest_rejected_triggers[dependency_id] = rejected_record
+            dep.verdict = self._derive_effective_verdict(dependency_id, VERDICT_UNRESOLVED)
         else:
-            # BOUND: Accept notice into history & update verdict
-            dep.verdict = verdict
+            # BOUND: append the accepted result before deriving the conservative
+            # effective verdict from the complete accepted history.
             dep.accepted_notice_count = u256(int(dep.accepted_notice_count) + 1)
 
             eval_record = EvaluationRecordData(
@@ -613,6 +664,7 @@ class RetractionDependency(gl.Contract):
                 resolver=resolver_addr,
             )
             evals_array.append(eval_record)
+            dep.verdict = self._derive_effective_verdict(dependency_id, verdict)
 
         self.dependencies[dependency_id] = dep
         p.revision = u256(int(p.revision) + 1)
@@ -633,6 +685,29 @@ class RetractionDependency(gl.Contract):
         p.activated = True
         p.revision = u256(int(p.revision) + 1)
         self.proposals[proposal_id] = p
+
+    def _derive_effective_verdict(self, dependency_id: u256, fallback_verdict: str) -> str:
+        evals = self.dependency_evaluations[dependency_id] if dependency_id in self.dependency_evaluations else []
+        has_unresolved = False
+        has_disputed = False
+        has_usable = False
+        for ev in evals:
+            if ev.verdict == VERDICT_INVALID_FOR_CLAIM:
+                return VERDICT_INVALID_FOR_CLAIM
+            if ev.verdict == VERDICT_UNRESOLVED:
+                has_unresolved = True
+            elif ev.verdict == VERDICT_DISPUTED:
+                has_disputed = True
+            elif ev.verdict == VERDICT_USABLE:
+                has_usable = True
+
+        if fallback_verdict == VERDICT_UNRESOLVED or has_unresolved:
+            return VERDICT_UNRESOLVED
+        if has_disputed:
+            return VERDICT_DISPUTED
+        if has_usable:
+            return VERDICT_USABLE
+        return fallback_verdict
 
     def _calculate_proposal_status(self, proposal_id: u256) -> dict:
         if proposal_id not in self.proposals:
@@ -657,7 +732,7 @@ class RetractionDependency(gl.Contract):
             if dep.review_status == "PENDING":
                 has_pending = True
 
-            v = dep.verdict
+            v = self._derive_effective_verdict(d_id, dep.verdict)
             if v == VERDICT_INVALID_FOR_CLAIM:
                 has_invalid = True
             elif v in [VERDICT_UNREVIEWED, VERDICT_DISPUTED, VERDICT_UNRESOLVED]:
@@ -682,6 +757,8 @@ class RetractionDependency(gl.Contract):
             "source_policy": "CROSSREF_PLUS_EUROPE_PMC_OPEN_NOTICE",
             "max_dependencies_per_proposal": MAX_DEPENDENCIES_PER_PROPOSAL_INT,
             "max_notices_per_dependency": MAX_NOTICES_PER_DEPENDENCY_INT,
+            "max_conclusive_rejections_per_dependency": MAX_CONCLUSIVE_REJECTIONS_PER_DEPENDENCY_INT,
+            "permissionless_review_cooldown_seconds": REVIEW_REQUEST_COOLDOWN_SECONDS_INT,
             "input_bounds": {
                 "title": [TITLE_MIN_LENGTH, TITLE_MAX_LENGTH],
                 "claim_text": [CLAIM_MIN_LENGTH, CLAIM_MAX_LENGTH],
@@ -733,7 +810,10 @@ class RetractionDependency(gl.Contract):
 
         invalid_count = 0
         for d_id in dep_ids:
-            if d_id in self.dependencies and self.dependencies[d_id].verdict == VERDICT_INVALID_FOR_CLAIM:
+            if (
+                d_id in self.dependencies
+                and self._derive_effective_verdict(d_id, self.dependencies[d_id].verdict) == VERDICT_INVALID_FOR_CLAIM
+            ):
                 invalid_count += 1
 
         status_info = self._calculate_proposal_status(proposal_id)
@@ -760,13 +840,19 @@ class RetractionDependency(gl.Contract):
         if dependency_id not in self.dependencies:
             raise gl.vm.UserError("Dependency does not exist")
         dep = self.dependencies[dependency_id]
+        effective_verdict = self._derive_effective_verdict(dependency_id, dep.verdict)
+        last_permissionless_review_at = (
+            int(self.permissionless_review_last_requested_at[dependency_id])
+            if dependency_id in self.permissionless_review_last_requested_at
+            else 0
+        )
         return {
             "id": int(dep.id),
             "proposal_id": int(dep.proposal_id),
             "original_doi": dep.original_doi,
             "original_pmid": dep.original_pmid,
             "dependency_statement": dep.dependency_statement,
-            "verdict": dep.verdict,
+            "verdict": effective_verdict,
             "review_status": dep.review_status,
             "pending_notice_doi": dep.pending_notice_doi,
             "pending_notice_pmid": dep.pending_notice_pmid,
@@ -774,6 +860,12 @@ class RetractionDependency(gl.Contract):
             "review_round": int(dep.review_round),
             "revision": int(dep.revision),
             "pending_requester": str(dep.pending_requester),
+            "last_permissionless_review_at": last_permissionless_review_at,
+            "next_permissionless_review_at": (
+                last_permissionless_review_at + REVIEW_REQUEST_COOLDOWN_SECONDS_INT
+                if last_permissionless_review_at > 0
+                else 0
+            ),
         }
 
     @gl.public.view
@@ -817,10 +909,23 @@ class RetractionDependency(gl.Contract):
                 "requester": str(rej.requester),
             }
 
+        conclusive_rejections = []
+        if dependency_id in self.conclusive_rejected_triggers:
+            for rej in self.conclusive_rejected_triggers[dependency_id]:
+                conclusive_rejections.append({
+                    "dependency_id": int(rej.dependency_id),
+                    "notice_doi": rej.notice_doi,
+                    "notice_pmid": rej.notice_pmid,
+                    "rejection_code": rej.rejection_code,
+                    "review_round": int(rej.review_round),
+                    "requester": str(rej.requester),
+                })
+
         return {
             "dependency_id": int(dependency_id),
             "accepted_evaluations": eval_list,
             "latest_rejected_trigger": latest_rejected,
+            "conclusive_rejections": conclusive_rejections,
         }
 
     @gl.public.view
@@ -907,6 +1012,16 @@ class RetractionDependency(gl.Contract):
             if d_id in self.dependencies:
                 res.append(self.get_dependency(d_id))
         return res
+
+    @gl.public.write
+    def migrate_v2(self) -> None:
+        if gl.message.sender_address != self.configured_upgrader:
+            raise gl.vm.UserError("Only the configured upgrader can migrate storage")
+        if int(self.storage_layout_version) >= STORAGE_LAYOUT_VERSION_INT:
+            raise gl.vm.UserError("Storage layout is already migrated to V2")
+        # New TreeMap fields are lazily materialized; no existing slot is
+        # reordered or rewritten during this append-only migration.
+        self.storage_layout_version = u256(STORAGE_LAYOUT_VERSION_INT)
 
     @gl.public.write
     def upgrade(self, new_code: bytes) -> None:
@@ -1027,8 +1142,15 @@ def fetch_and_evaluate_evidence(
         if len(res_orig.body) > 250000:
             return _safe_unresolved(orig_doi, orig_pmid, notice_doi, notice_pmid, REASON_RESPONSE_TOO_LARGE, "Crossref original payload exceeds limit")
         crossref_orig_json = json.loads(res_orig.body)
-    except Exception:
-        return _safe_unresolved(orig_doi, orig_pmid, notice_doi, notice_pmid, REASON_RESPONSE_MALFORMED, "Crossref original response could not be fetched or parsed")
+    except Exception as error:
+        return _safe_unresolved(
+            orig_doi,
+            orig_pmid,
+            notice_doi,
+            notice_pmid,
+            REASON_RESPONSE_MALFORMED,
+            f"Crossref original response could not be fetched or parsed: {str(error)}",
+        )
 
     # Crossref notice
     try:

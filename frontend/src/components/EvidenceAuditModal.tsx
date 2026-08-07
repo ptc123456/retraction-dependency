@@ -33,7 +33,9 @@ export const EvidenceAuditModal: React.FC<Props> = ({ history, onClose }) => {
           </button>
         </div>
 
-        {history.acceptedEvaluations.length === 0 && !history.latestRejectedTrigger ? (
+        {history.acceptedEvaluations.length === 0
+          && history.conclusiveRejections.length === 0
+          && !history.latestRejectedTrigger ? (
           <p style={{ color: 'var(--color-ink-muted)' }}>No audit evaluation records found for this dependency.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
@@ -47,6 +49,13 @@ export const EvidenceAuditModal: React.FC<Props> = ({ history, onClose }) => {
                   <div>Notice DOI: {history.latestRejectedTrigger.noticeDoi}</div>
                   <div>Rejection Code: <strong>{history.latestRejectedTrigger.rejectionCode}</strong></div>
                 </div>
+              </div>
+            )}
+
+            {history.conclusiveRejections.length > 0 && (
+              <div style={{ padding: 'var(--space-sm)', border: '1px solid var(--color-paper-3)', borderRadius: 4 }}>
+                <strong>Permanent replay protection:</strong>{' '}
+                {history.conclusiveRejections.length}/12 conclusive rejection pairs retained.
               </div>
             )}
 

@@ -29,11 +29,20 @@ contract.
 5. Connect the confirmed external upgrader wallet.
 6. Call `upgrade(bytes)` with the exact reviewed source bytes.
 7. Wait for `FINALIZED` and successful execution.
-8. Read `get_deployment_config()`, key application state, and current contract
+8. When upgrading a V1 deployment to this V2 layout, call `migrate_v2()` from
+   the configured upgrader and require `FINALIZED` plus successful execution.
+9. Read `get_deployment_config()`, key application state, and current contract
    code through the current RPC.
-9. Compare returned code/source hash to the reviewed revision.
-10. Record the upgrade transaction, source commit/hash, readback, and test
+10. Confirm storage layout version `2`, conservative history readback, and the
+    permissionless cooldown fields.
+11. Compare returned code/source hash to the reviewed revision.
+12. Record the upgrade and migration transactions, source commit/hash, readback, and test
     evidence in the deployment manifest.
+
+V2 appends `permissionless_review_last_requested_at` and
+`conclusive_rejected_triggers` after every V1 storage field. Existing fields
+are not reordered or rewritten. `migrate_v2()` changes only the explicit
+layout-version marker and rejects unauthorized or repeated execution.
 
 Never switch the frontend to replacement code/address before the smoke tests
 and source-parity checks pass.

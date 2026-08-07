@@ -41,6 +41,12 @@ const emptyDependency: DependencyDraft = {
   noticePmid: '',
 };
 
+const isPermissionlessCooldownActive = (dependency: Dependency, isOwner: boolean): boolean =>
+  !isOwner && dependency.nextPermissionlessReviewAt > Math.floor(Date.now() / 1000);
+
+const formatCooldownEnd = (timestamp: number): string =>
+  new Date(timestamp * 1000).toLocaleString();
+
 export const ProposalDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -375,8 +381,17 @@ export const ProposalDetailPage: React.FC = () => {
                   </>
                 )}
                 {proposal.sealed && dependency.reviewStatus === 'IDLE' && (
-                  <button className="btn btn-secondary compact" onClick={() => setReviewingDependency(dependency.id)} disabled={busy || !account}>
-                    <Plus size={13} /> Request review
+                  <button
+                    className="btn btn-secondary compact"
+                    onClick={() => setReviewingDependency(dependency.id)}
+                    disabled={busy || !account || isPermissionlessCooldownActive(dependency, isOwner)}
+                    title={
+                      isPermissionlessCooldownActive(dependency, isOwner)
+                        ? `Permissionless review cooldown ends ${formatCooldownEnd(dependency.nextPermissionlessReviewAt)}`
+                        : undefined
+                    }
+                  >
+                    <Plus size={13} /> {isPermissionlessCooldownActive(dependency, isOwner) ? 'Cooldown active' : 'Request review'}
                   </button>
                 )}
                 {dependency.reviewStatus === 'PENDING' && (
@@ -402,6 +417,12 @@ export const ProposalDetailPage: React.FC = () => {
               <div><dt>Review</dt><dd>{dependency.reviewStatus} · round {dependency.reviewRound}</dd></div>
               <div><dt>Accepted notices</dt><dd>{dependency.acceptedNoticeCount}/3</dd></div>
             </dl>
+            {isPermissionlessCooldownActive(dependency, isOwner) && (
+              <p className="permission-note">
+                Anti-griefing cooldown: another permissionless review can open after{' '}
+                {formatCooldownEnd(dependency.nextPermissionlessReviewAt)}. The proposal owner may retry a transient source failure immediately.
+              </p>
+            )}
             {dependency.pendingNoticeDoi && (
               <div className="evidence-links">
                 <a href={`https://api.crossref.org/works/${dependency.pendingNoticeDoi}`} target="_blank" rel="noreferrer">Crossref notice <ExternalLink size={11} /></a>

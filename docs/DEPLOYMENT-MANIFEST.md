@@ -1,9 +1,18 @@
 # RetractionDependency deployment manifest
 
-Status: POST_GITHUB_VERCEL_FINAL — CODEX APPROVED; ANONYMOUS PENDING
+Status: JUDGE_FEEDBACK_REPAIR — V2 POST_DEPLOY_TEST EVIDENCE COMPLETE
 
 This document is secret-free. Never add a private key, seed phrase, API key,
 wallet backup, or access token.
+
+## V2 repair deployment boundary
+
+The historical V1 deployment was upgraded in place after the exact V2 contract
+source received Codex and anonymous `PRE_DEPLOY` approval. The configured
+upgrader completed `upgrade(bytes)` and `migrate_v2()` on Studionet. RPC and
+contract readback confirm finality, majority agreement, leader execution
+success, exact code parity, layout version `2`, preserved V1 state, and live
+judge-remediation behavior.
 
 ## Deployed contract
 
@@ -20,15 +29,24 @@ wallet backup, or access token.
 | Selected upgrader wallet | `0x277bf20771129ae224042d23b0311c1ac5a9ac1b` (same external user-controlled wallet) |
 | Wallet/network verification | Studio screenshot and public RPC confirm chain `0xf22f` / `61999` and the selected wallet |
 | User deployment authorization | CONFIRMED - deploy RetractionDependency to Studionet 61999 from the selected wallet with the same address as upgrader |
-| PRE_DEPLOY source package SHA-256 | `d460505c41edafa724112061b0b8f37ed1bba2590c9aaa89a2f84c79baaa4082` |
-| Current POST_DEPLOY source package SHA-256 | `1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01` |
-| Current final release-candidate source package SHA-256 | `92c258a6e576e6a59895ccf549aeb98ad3215999e4458784fd2cf1815aac06f3` |
-| Contract source SHA-256 | `e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769` |
+| V2 repair candidate hashes | `docs/PREDEPLOY-REVIEW-MANIFEST.txt` |
+| V2 repair candidate source package SHA-256 | `07bfec1a792e2762a09d491d19028df03f3bed9af82e38fa3dd21fc13348779f` |
+| V2 repair candidate contract source SHA-256 | `86152374413bd1cf5d3e2a68e5278130026e6f3d759df17df230fcf0f0cce03a` |
+| V2 POST_DEPLOY source package SHA-256 | `5bb5e826bb93cf529a0ff99156eb68410a6796a374aab8f6df5e22332b27adb8` |
+| V2 Codex / anonymous PRE_DEPLOY verdict | `APPROVED` / `APPROVED` for source package `07bfec1a792e2762a09d491d19028df03f3bed9af82e38fa3dd21fc13348779f` |
+| Historical V1 PRE_DEPLOY source package SHA-256 | `d460505c41edafa724112061b0b8f37ed1bba2590c9aaa89a2f84c79baaa4082` |
+| Historical V1 POST_DEPLOY source package SHA-256 | `1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01` |
+| Historical V1 final release source package SHA-256 | `92c258a6e576e6a59895ccf549aeb98ad3215999e4458784fd2cf1815aac06f3` |
+| Historical V1 contract source SHA-256 | `e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769` |
+| Current deployed V2 contract source SHA-256 | `86152374413bd1cf5d3e2a68e5278130026e6f3d759df17df230fcf0f0cce03a` |
 | First public reviewed Git commit | [`b88a9b0f81e1965df29c7156a4bfe06315f0eaa8`](https://github.com/ptc123456/retraction-dependency/commit/b88a9b0f81e1965df29c7156a4bfe06315f0eaa8) |
 | Public repository | [`ptc123456/retraction-dependency`](https://github.com/ptc123456/retraction-dependency) |
 | Contract address | `0xcEe31f6b4B1718445b2480C56940cCF72912a410` |
 | Deployment transaction | `0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff` |
 | Explorer evidence | [Contract](https://explorer-studio.genlayer.com/address/0xcEe31f6b4B1718445b2480C56940cCF72912a410) / [transaction](https://explorer-studio.genlayer.com/tx/0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff) |
+| V2 upgrade transaction | [`0x48d2288668a2a0c4ceb1680e495e63e980a4688dcd532bb61274870a77c3e213`](https://explorer-studio.genlayer.com/tx/0x48d2288668a2a0c4ceb1680e495e63e980a4688dcd532bb61274870a77c3e213) |
+| V2 migration transaction | [`0xd83bf6bce01c512da3922c8e8ecc61c16095edb264e6d6ef2d8a990d588253a1`](https://explorer-studio.genlayer.com/tx/0xd83bf6bce01c512da3922c8e8ecc61c16095edb264e6d6ef2d8a990d588253a1) |
+| V2 upgrade/migration result | PASS - both `FINALIZED`, `MAJORITY_AGREE`, leader `SUCCESS`; layout `2`; five proposals and three dependencies preserved |
 | Separate rehearsal contract | `0xF666b50B2096fdA2fCa3D7af7DC5BaB6e4907213` |
 | Rehearsal deployment transaction | `0x4ace3128a800b07a2e214095e5ca7914f6332f314fdeea228003282cd4b61189` |
 | Authorized upgrade transaction | `0xacdf70d1c9c5844da08f38f565e66d3afb5af2a2ee65930522fc2a6330222f1d` |
@@ -49,10 +67,12 @@ RPC verification for the successful deployment shows `FINALIZED`,
 the leader and all four validators. Both `from_address` and `origin_address`
 are `0x277bF20771129ae224042d23b0311C1AC5a9AC1b`.
 
-`gen_getContractCode` reproduces contract SHA-256
-`e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769`.
+`gen_getContractCode` reproduces current V2 contract SHA-256
+`86152374413bd1cf5d3e2a68e5278130026e6f3d759df17df230fcf0f0cce03a`.
 `get_deployment_config()` returns classification `UPGRADABLE`, storage layout
-version `1`, and the selected wallet as `configured_upgrader`.
+version `2`, and the selected wallet as `configured_upgrader`. `get_counts()`
+returns five proposals and three dependencies, matching the pre-migration
+state.
 
 The prior user-run deployment attempts reached consensus but failed during
 constructor execution because Studio serialized the Address constructor input
@@ -65,14 +85,14 @@ contract, frontend source/E2E, tests, scripts, root public files, and build/test
 configuration; it excludes internal governance documents, dependencies, caches,
 and build output.
 
-The current POST_DEPLOY package adds deterministic test isolation, live-address
-E2E mode, multi-wallet EIP-6963/EIP-1193 discovery, and a wallet-facing gas
+The historical V1 POST_DEPLOY package added deterministic test isolation,
+live-address E2E mode, multi-wallet EIP-6963/EIP-1193 discovery, and a wallet-facing gas
 compatibility floor for Studionet's zero-price RPC response. Compatible EVM
 wallets retain direct signing through their selected provider; MetaMask keeps
 its additional Snap bootstrap. Wallet account strings are normalized to EIP-55
 before owner-indexed reads so providers that return lowercase accounts reconcile
-against the contract's checksum owner key. The contract source remains byte-identical to
-the reviewed and deployed contract hash.
+against the contract's checksum owner key. Those frontend changes did not alter
+the then-deployed V1 contract; current V2 parity is recorded above.
 Transient RPC read failures receive a ten-second per-attempt timeout and one
 bounded retry, then expose a manual `Retry chain read` recovery control;
 deterministic contract errors remain single-attempt failures.
@@ -99,8 +119,8 @@ leader and all five validators. The post-upgrade deployed code hash remains
 Configuration remains `UPGRADABLE`, layout version `1`, with upgrader
 `0x277bF20771129ae224042d23b0311C1AC5a9AC1b`. Counts remain one proposal and
 zero dependencies; proposal `#1` retains its exact owner, title, claim,
-revision, seal state, and `DRAFT` status. The production fixture contract was
-not upgraded.
+revision, seal state, and `DRAFT` status. At the time of this rehearsal, the
+production fixture contract had not yet been upgraded.
 
 After that persistence checkpoint, proposal `#1` exercised the complete draft
 CRUD surface through the frontend and external wallet:
@@ -123,7 +143,7 @@ submission.
 
 ## Storage compatibility plan
 
-Storage layout version: `1`.
+Current deployed storage layout version: `2`.
 
 Existing contract storage fields, in order:
 
@@ -137,6 +157,8 @@ Existing contract storage fields, in order:
 8. `dependency_count`
 9. `configured_upgrader`
 10. `storage_layout_version`
+11. `permissionless_review_last_requested_at` (V2 append-only candidate field)
+12. `conclusive_rejected_triggers` (V2 bounded persistent replay history)
 
 Future upgrades must not reorder, remove, or change the type of any existing
 field. New fields may be appended only. Any incompatible migration requires a
@@ -152,13 +174,17 @@ testing and as the Vercel production `VITE_CONTRACT_ADDRESS`. The production
 bundle contains the exact verified Studionet contract address and chain ID
 `61999`; it contains no Bradbury reference.
 
-## Remaining release evidence
+## Remaining V2 release gates
 
-- exact final release commit and source-package/evidence-package hashes;
-- anonymous `POST_GITHUB_VERCEL_FINAL` approval for the same public revision,
-  contract and live URL.
+- independent anonymous `POST_DEPLOY_TEST` approval for the exact evidence
+  package;
+- exact public commit and refreshed Vercel deployment after that approval;
+- Codex and anonymous `POST_GITHUB_VERCEL_FINAL` approval before the one
+  permitted resubmission.
 
-The completed POST_DEPLOY_TEST approval is bound to source package SHA-256
+### Historical V1 POST_DEPLOY_TEST closure
+
+The completed historical V1 POST_DEPLOY_TEST approval is bound to source package SHA-256
 `1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01`
 and canonical evidence-package SHA-256
 `93ba9546e6d44ca19a70541ffafacbcfc9818d85feda7b38fb46838606d140c6`.

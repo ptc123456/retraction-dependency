@@ -19,7 +19,7 @@ const steps = [
   ['Seal the proposal', 'Sealing prevents further edits and opens the initial evidence reviews. Each dependency enters EVIDENCE_HOLD until resolved.'],
   ['Resolve with consensus', 'GenLayer validators independently fetch Crossref and Europe PMC evidence, bind the notice to the original paper, and evaluate material effect.'],
   ['Apply the on-chain consequence', 'USABLE evidence can make a proposal ELIGIBLE. An INVALID_FOR_CLAIM dependency makes it INVALIDATED. Missing or disputed evidence fails safely.'],
-  ['Monitor later publication updates', 'After sealing, anyone can request another review using a newly published correction or retraction. The proposal status is recalculated on-chain.'],
+  ['Monitor later publication updates', 'After sealing, anyone can request another review using a newly published correction or retraction. Permissionless requests have a 24-hour per-dependency cooldown; the owner can immediately retry transient source failures.'],
 ];
 
 const statusRows = [
@@ -113,9 +113,29 @@ export const ProjectGuidePage: React.FC = () => (
       </div>
     </section>
 
+    <section className="docs-section docs-split" aria-labelledby="history-title">
+      <div>
+        <div className="section-marker">04 / CONSERVATIVE HISTORY</div>
+        <h2 id="history-title">An invalidation cannot be erased</h2>
+      </div>
+      <div className="docs-copy">
+        <p>
+          The effective dependency verdict is derived from the complete accepted on-chain history,
+          not only the newest notice. Once a bound notice establishes INVALID_FOR_CLAIM, a later
+          usable correction, disputed result, or temporary source outage cannot restore eligibility.
+        </p>
+        <p>
+          Accepted notice pairs cannot be replayed. Up to twelve conclusive rejection pairs are retained
+          permanently per dependency; at the cap, new reviews fail closed instead of evicting older replay
+          protection. Retryable source failures may be retried, while the permissionless cooldown prevents
+          repeated requests from indefinitely holding a proposal.
+        </p>
+      </div>
+    </section>
+
     <section className="docs-section guide-operations" aria-labelledby="operations-title">
       <div>
-        <div className="section-marker">04 / OPERATIONS</div>
+        <div className="section-marker">05 / OPERATIONS</div>
         <h2 id="operations-title">Full Consensus takes time</h2>
         <p>
           Writes may spend several minutes in consensus. Sign once, keep the page open, and use

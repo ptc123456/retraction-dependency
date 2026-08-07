@@ -93,9 +93,24 @@ history, verdicts, and consequences. The frontend owns only interaction state,
 wallet selection, and a local ledger of submitted transaction hashes. There is
 no backend, relayer, cron job, or off-chain verdict database.
 
+### Conservative history and permissionless review safety
+
+Dependency status is derived from the complete accepted on-chain history, not
+only the newest notice. An established `INVALID_FOR_CLAIM` result permanently
+dominates later usable, disputed, or temporarily unavailable evidence under
+Policy V1. Accepted notice pairs and conclusively unbound pairs cannot be
+replayed. The contract permanently retains up to twelve conclusive rejection
+pairs per dependency and then rejects new reviews instead of evicting old
+replay protection. Retryable source failures can be submitted again.
+
+Permissionless review requests are limited to one successful request per
+dependency every 24 hours. The proposal owner is exempt so a transient source
+failure can be recovered immediately. See the exact judge-feedback mapping and
+tests in [`docs/JUDGE-FEEDBACK-REMEDIATION.md`](docs/JUDGE-FEEDBACK-REMEDIATION.md).
+
 ## Intelligent Contract
 
-The contract exposes 11 view methods and 10 write methods. Its primary flow is:
+The contract exposes 11 view methods and 11 write methods. Its primary flow is:
 
 ```text
 DRAFT
@@ -116,8 +131,8 @@ bounded open notice text, and independent validator comparison of every
 consequence-critical field. Missing, malformed, oversized, conflicting, or
 unsupported evidence fails safely.
 
-The tenth write is the operational `upgrade(bytes)` recovery path. It is not a
-public product action and is absent from the dApp. The constructor registers
+The operational `upgrade(bytes)` and `migrate_v2()` writes are recovery paths. They are not
+public product actions and are absent from the dApp. The constructor registers
 the user-confirmed external wallet in the GenVM Root Slot upgrader list. That
 wallet can replace code and is therefore a disclosed trust authority; it
 cannot inject a normal application verdict.
@@ -186,11 +201,11 @@ npm run e2e
 
 Current verified results:
 
-- GenVM lint/validation: PASS, 21 methods;
-- deterministic contract tests: PASS, 58/58;
+- GenVM lint/validation: PASS, 22 methods;
+- deterministic contract tests: PASS, 71/71;
 - glsim live-web fixtures and upgrade persistence: PASS, 4/4;
 - TypeScript and ESLint: PASS;
-- Vitest: PASS, 49/49;
+- Vitest: PASS, 50/50;
 - Vite production build: PASS;
 - Playwright Chromium: PASS, 6/6.
 
@@ -201,10 +216,12 @@ contract readback. Full evidence and exact hashes are in
 
 ## Deployment
 
-The production candidate contract is deployed and source-verified on
-Studionet. `gen_getContractCode` hashes to
-`e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769`,
-matching [`contracts/retraction_dependency.py`](contracts/retraction_dependency.py).
+The public Studionet contract has been upgraded in place to the reviewed V2
+judge-feedback repair. The authorized `upgrade(bytes)` and `migrate_v2()`
+writes finalized successfully, deployed source matches this repository's
+contract source, storage layout is `2`, and the five historical proposals plus
+three dependencies were preserved. The deployed V2 code hash is
+`86152374413bd1cf5d3e2a68e5278130026e6f3d759df17df230fcf0f0cce03a`.
 
 All three locked fixtures reached their expected live consequences:
 
@@ -214,8 +231,9 @@ All three locked fixtures reached their expected live consequences:
 | B: material correction | `10.1371/journal.pntd.0011026` | `INVALID_FOR_CLAIM` | `INVALIDATED` |
 | C: retraction | `10.1126/sciadv.adv4615` | `INVALID_FOR_CLAIM` | `INVALIDATED` |
 
-A separate rehearsal deployment passed an authorized code upgrade with exact
-post-upgrade source parity and preserved pre-existing proposal state. See
+The production contract also passed live conservative-history, replay,
+permissionless cooldown, and owner-recovery checks. A separate V1 rehearsal
+deployment had already proved authorized upgrade persistence. See
 [`docs/DEPLOYMENT-MANIFEST.md`](docs/DEPLOYMENT-MANIFEST.md) and
 [`docs/RECOVERY.md`](docs/RECOVERY.md).
 

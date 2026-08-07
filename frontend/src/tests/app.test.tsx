@@ -4,7 +4,9 @@ import { UnconfiguredBanner } from '../components/UnconfiguredBanner';
 import { normalizeContractValue, retryTransientRpcRead } from '../services/contractAdapter';
 import {
   CreateProposalFormSchema,
+  DependencySchema,
   DependencyHistorySchema,
+  PolicySchema,
   ProposalSchema,
   ProposalStatusResultSchema,
 } from '../types/schema';
@@ -132,7 +134,34 @@ describe('evaluation history schema', () => {
         dependencyId: 1,
         acceptedEvaluations: [{ verdict: 'USABLE' }],
         latestRejectedTrigger: null,
+        conclusiveRejections: [],
       }).success,
     ).toBe(false);
+  });
+
+  it('parses conservative-history and anti-griefing readback fields', () => {
+    expect(
+      DependencySchema.parse({
+        id: 1,
+        proposalId: 1,
+        originalDoi: '10.1371/journal.pntd.0009591',
+        originalPmid: '34280196',
+        dependencyStatement: 'The frozen dependency statement is sufficiently specific and bounded.',
+        verdict: 'INVALID_FOR_CLAIM',
+        reviewStatus: 'IDLE',
+        pendingNoticeDoi: '',
+        pendingNoticePmid: '',
+        acceptedNoticeCount: 2,
+        reviewRound: 2,
+        revision: 5,
+        pendingRequester: owner,
+        lastPermissionlessReviewAt: 1_000_000,
+        nextPermissionlessReviewAt: 1_086_400,
+      }).nextPermissionlessReviewAt,
+    ).toBe(1_086_400);
+
+    expect(
+      PolicySchema.shape.permissionlessReviewCooldownSeconds.parse(86_400),
+    ).toBe(86_400);
   });
 });
