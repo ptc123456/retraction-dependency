@@ -107,9 +107,9 @@ authorization, finality, majority agreement, leader execution success, layout
 and preserved-state readback, every live anti-griefing scenario, the complete
 local release suite, production dependency audit, secret scan, and current
 official Studionet network values. No V2 source-failure outage is claimed as a
-live test. This is checkpoint approval only; independent anonymous
-`POST_DEPLOY_TEST` approval is still required before public push and Vercel
-refresh.
+live test. The independent anonymous co-review subsequently returned
+`APPROVED` for the same exact V2 source and POST_DEPLOY evidence package with
+no checkpoint-scoped blocker.
 
 ## Historical V1 release evidence
 
@@ -541,8 +541,8 @@ rehearsal CRUD state is proposal `#1` revision `5` with an empty
 proposal-scoped dependency list. Retained hashes were reconciled after
 transient Studionet failures; no duplicate write is accepted as evidence.
 
-The final release rerun passed GenVM lint/semantic validation (21 methods), 58
-contract tests, TypeScript, ESLint with zero warnings, 49 Vitest tests,
+The final V2 release rerun passed GenVM lint/semantic validation (22 methods),
+71 contract tests, TypeScript, ESLint with zero warnings, 50 Vitest tests,
 production build, six Playwright flows, `pip check`, secret scanning, and
 `npm audit --omit=dev` with zero vulnerabilities. GitHub post-push presentation
 and Vercel production/live-read checks also PASS.
@@ -551,9 +551,9 @@ and Vercel production/live-read checks also PASS.
 
 Codex and the anonymous co-review AI both returned
 `APPROVED — POST_DEPLOY_TEST` for source package SHA-256
-`1077cb133bd4a471674af97632c72112ba8ceccb23fbed47cc720150c4f44e01`
-and canonical evidence-package SHA-256
-`93ba9546e6d44ca19a70541ffafacbcfc9818d85feda7b38fb46838606d140c6`.
+`5bb5e826bb93cf529a0ff99156eb68410a6796a374aab8f6df5e22332b27adb8`
+and contract-source SHA-256
+`86152374413bd1cf5d3e2a68e5278130026e6f3d759df17df230fcf0f0cce03a`.
 The anonymous review reported no checkpoint-scoped blocker. This closes the
 live-integration checkpoint only; it is not final completion approval.
 
@@ -562,23 +562,20 @@ Submission recommendation: READY for independent
 and the anonymous co-review AI both return `APPROVED` for one exact public
 revision and evidence package.
 
-## Codex POST_GITHUB_VERCEL_FINAL verdict
+## POST_GITHUB_VERCEL_FINAL candidate
 
-Verdict: `APPROVED — POST_GITHUB_VERCEL_FINAL`
+The public V2 source was pushed at commit
+`80dd6ee89e820d728be8f5fb1410f1e573bf4848`. Vercel production deployment
+`dpl_EY2f4Y6AsksuG2AmEp173cnjmAN4` is `READY` and aliased to
+`https://retraction-dependency.vercel.app`. Its application bundle
+`index-DXxQeneq.js` has SHA-256
+`7c3d3feaeac9f50669add94ce3cc417edc32861e267c64d50584a8bedac3d2a0`,
+which matches the local production build byte-for-byte and contains the exact
+Studionet contract address.
 
-Codex binds this verdict to source package SHA-256
-`92c258a6e576e6a59895ccf549aeb98ad3215999e4458784fd2cf1815aac06f3`,
-contract source SHA-256
-`e45f12279e886eeec8e3f2bf18e6f59030077d06787e66511c705d94bfcff769`,
-Studionet contract `0xcEe31f6b4B1718445b2480C56940cCF72912a410`, and live web
-`https://retraction-dependency.vercel.app`. The exact public commit and
-canonical evidence-package SHA-256 are recorded in the immutable anonymous
-review package assembled after committing this document.
-
-All applicable technical, integrity, GitHub presentation, deployment,
-recovery, live-product and scorecard gates PASS. This is Codex's final
-checkpoint approval, not `DUAL_APPROVED`; anonymous approval for the exact same
-revision and evidence package is still required.
+Final completion remains pending the exact-revision Codex and anonymous
+`POST_GITHUB_VERCEL_FINAL` verdicts. No final or `DUAL_APPROVED` claim is made
+by this candidate document.
 
 ## Known limitations
 
