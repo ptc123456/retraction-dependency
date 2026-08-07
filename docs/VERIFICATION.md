@@ -113,6 +113,10 @@ no checkpoint-scoped blocker.
 
 ## Historical V1 release evidence
 
+Every section explicitly prefixed `Historical V1` below records superseded
+release evidence only. Those hashes, method counts, test counts, commits and
+deployment identifiers are not the current V2 release boundary.
+
 ## Trust and chain authority
 
 Proposal owners cannot be trusted to decide whether a correction or retraction
@@ -126,7 +130,7 @@ The Intelligent Contract alone changes `EVIDENCE_HOLD`, `ELIGIBLE`, `ACTIVE`,
 or `INVALIDATED`. The frontend treats a write as successful only after
 `FINALIZED`, `FINISHED_WITH_RETURN`, and method-specific contract readback.
 
-## Local evidence matrix
+## Historical V1 local evidence matrix
 
 | Check | Result |
 |---|---|
@@ -183,7 +187,7 @@ source and deployed-source parity are unchanged. The complete local release
 suite was rerun. The exact 40-character commit containing this document is
 recorded in the final immutable review package.
 
-## GitHub publication evidence
+## Historical V1 GitHub publication evidence
 
 - Public repository:
   [`ptc123456/retraction-dependency`](https://github.com/ptc123456/retraction-dependency)
@@ -200,7 +204,7 @@ This release-metadata successor removes stale pre-push language. The exact
 final release commit is recorded in the immutable
 `POST_GITHUB_VERCEL_FINAL` package containing this document.
 
-## Vercel production evidence
+## Historical V1 Vercel production evidence
 
 - Live application:
   [`https://retraction-dependency.vercel.app`](https://retraction-dependency.vercel.app)
@@ -230,7 +234,7 @@ final release commit is recorded in the immutable
   surfaces are not represented as public application links.
 - Browser console: no warning or error entries during the live review.
 
-## Studionet deployment evidence
+## Historical V1 Studionet deployment evidence
 
 - Contract: [`0xcEe31f6b4B1718445b2480C56940cCF72912a410`](https://explorer-studio.genlayer.com/address/0xcEe31f6b4B1718445b2480C56940cCF72912a410)
 - Deployment transaction: [`0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff`](https://explorer-studio.genlayer.com/tx/0xe8f331f421b4f5e580af3b6af395b3cde261cd5919fd2edb67809cb0efebdcff)
@@ -389,7 +393,7 @@ First live activation:
 - the frontend polling window expired at status `5`, but finalized execution
   and state readback prove activation succeeded and must not be resubmitted.
 
-## Complete live semantic fixture matrix
+## Historical V1 semantic fixture matrix preserved through V2 migration
 
 Public Studionet reads on the deployed contract confirm all three locked
 fixtures reached their Policy V1 consequences through live consensus:
@@ -408,7 +412,7 @@ invalidation branches. These values were read directly from
 `get_proposal()`, `get_dependency()`, and `get_dependency_history()` after the
 transactions finalized.
 
-## Separate safe upgrade rehearsal
+## Historical V1 separate safe upgrade rehearsal
 
 The recovery path was exercised on a separate Studionet deployment so the
 submission contract and its live fixture state were not placed at risk.
@@ -434,7 +438,7 @@ submission contract and its live fixture state were not placed at risk.
 This satisfies the live authorization, deployed-code parity, and storage
 persistence requirements without modifying the production fixture contract.
 
-### Rehearsal draft CRUD evidence
+### Historical V1 rehearsal draft CRUD evidence
 
 After upgrade persistence was established, the same rehearsal proposal was
 used to exercise every remaining draft mutation through the external wallet
@@ -454,7 +458,7 @@ transient RPC `QueuePool` failure and reconciled without duplicate submission.
 The rehearsal contract's cumulative dependency counter remains monotonic; the
 proposal-scoped dependency list is empty.
 
-## Permissionless re-review and safe rejected trigger
+## Historical V1 permissionless re-review and safe rejected trigger
 
 A wallet that does not own proposal `#3` exercised the later-audit path against
 dependency `#1`:
@@ -477,7 +481,7 @@ verdict remained `USABLE`, and proposal `#3` returned to `ACTIVE`.
 overwritten. This proves the advertised permissionless trigger and safe
 wrong-subject rejection path end to end.
 
-## Codex PRE_DEPLOY verdict — current revision
+## Historical V1 Codex PRE_DEPLOY verdict
 
 Verdict: `APPROVED — PRE_DEPLOY`
 
@@ -507,17 +511,22 @@ Reproduce with:
 powershell -ExecutionPolicy Bypass -File scripts\hash-source.ps1
 ```
 
-## Final evidence scorecard
+## Current V2 final evidence scorecard
 
 Category: `PROJECT`
 
 Validity gate: `PASS`
 
+Current V2 source package SHA-256:
+`5bb5e826bb93cf529a0ff99156eb68410a6796a374aab8f6df5e22332b27adb8`.
+Current V2 contract-source SHA-256:
+`86152374413bd1cf5d3e2a68e5278130026e6f3d759df17df230fcf0f0cce03a`.
+
 | Axis | Score | Evidence | Remaining weakness |
 |---|---:|---|---|
 | GenLayer fit | 5/5 | Consensus-critical semantic decision changes proposal eligibility; all three live semantic fixtures reached the expected on-chain consequences | Studionet persistence is temporary |
-| Contract quality | 5/5 | Exact deployed-source parity, independent dual-source validator verification, safe failures, 58 tests, and live upgrade persistence | External Root Slot upgrader remains a disclosed trust authority |
-| Engineering | 5/5 | Public reproducible repository, five meaningful commits before final evidence, full local release suite, deployment manifest, recovery runbook, source hashes and clean post-push review | GenVM linter reports a newer runner as informational only |
+| Contract quality | 5/5 | Exact V2 deployed-source parity, independent dual-source validator verification, safe failures, 71 contract tests, conservative accepted-history derivation, bounded replay protection, and live upgrade/migration persistence | External Root Slot upgrader remains a disclosed trust authority |
+| Engineering | 5/5 | Public reproducible exact revision, full V2 release suite, deployment manifest, recovery runbook, source hashes, clean public boundary and post-push parity review | GenVM linter reports a newer runner as informational only |
 | Frontend / UX | 5/5 | Production Vercel app reads the exact Studionet deployment; multi-provider wallet journeys, strict finality/execution/readback guards, bounded RPC recovery, SPA deep links, project guide and reconciliation are verified | WalletConnect/mobile QR is not claimed; installed EIP-6963/EIP-1193 wallets are supported |
 
 Overall evidence-based assessment: exceptional GenLayer necessity and contract
@@ -525,7 +534,7 @@ rigor, with a complete public product path and unusually strong live evidence.
 
 Submission recommendation: `READY`
 
-## Codex POST_DEPLOY_TEST verdict — current revision
+## Historical V1 Codex POST_DEPLOY_TEST verdict
 
 Verdict: `APPROVED — POST_DEPLOY_TEST`
 
@@ -541,13 +550,7 @@ rehearsal CRUD state is proposal `#1` revision `5` with an empty
 proposal-scoped dependency list. Retained hashes were reconciled after
 transient Studionet failures; no duplicate write is accepted as evidence.
 
-The final V2 release rerun passed GenVM lint/semantic validation (22 methods),
-71 contract tests, TypeScript, ESLint with zero warnings, 50 Vitest tests,
-production build, six Playwright flows, `pip check`, secret scanning, and
-`npm audit --omit=dev` with zero vulnerabilities. GitHub post-push presentation
-and Vercel production/live-read checks also PASS.
-
-## POST_DEPLOY_TEST closure
+## Current V2 POST_DEPLOY_TEST closure
 
 Codex and the anonymous co-review AI both returned
 `APPROVED — POST_DEPLOY_TEST` for source package SHA-256
@@ -557,12 +560,18 @@ and contract-source SHA-256
 The anonymous review reported no checkpoint-scoped blocker. This closes the
 live-integration checkpoint only; it is not final completion approval.
 
+The final V2 release rerun passed GenVM lint/semantic validation (22 methods),
+71 contract tests, TypeScript, ESLint with zero warnings, 50 Vitest tests,
+production build, six Playwright flows, `pip check`, secret scanning, and
+`npm audit --omit=dev` with zero vulnerabilities. GitHub post-push presentation
+and Vercel production/live-read checks also PASS.
+
 Submission recommendation: READY for independent
 `POST_GITHUB_VERCEL_FINAL` review. Final completion remains pending until Codex
 and the anonymous co-review AI both return `APPROVED` for one exact public
 revision and evidence package.
 
-## POST_GITHUB_VERCEL_FINAL candidate
+## Current V2 POST_GITHUB_VERCEL_FINAL candidate
 
 The public V2 implementation was pushed at commit
 `80dd6ee89e820d728be8f5fb1410f1e573bf4848`. Vercel Git integration uses
@@ -590,7 +599,7 @@ by this candidate document.
 - React Router was completely removed from production dependencies and source code to eliminate GHSA-qwww-vcr4-c8h2.
   `npm audit --omit=dev` reports 0 production vulnerabilities.
 
-## PRE_DEPLOY closure
+## Historical V1 PRE_DEPLOY closure
 
 Codex and the anonymous co-review AI both returned `APPROVED — PRE_DEPLOY` for
 source package
@@ -613,7 +622,7 @@ Studionet chain ID `61999` from the selected wallet, using that same address as
 the upgrader. This authorization does not bypass anonymous `PRE_DEPLOY` review
 or the final visible wallet/network check before signing.
 
-## Revision repair note
+## Historical V1 revision repair note
 
 The first Studio schema check on the prior revision returned `no contract
 defined` because `RetractionDependency` did not extend `gl.Contract`. Codex
@@ -628,7 +637,7 @@ valid for the corrected source. The corrected package later received a fresh
 anonymous `PRE_DEPLOY` approval before the successful deployment recorded
 above.
 
-## Studionet constructor failure and repair
+## Historical V1 Studionet constructor failure and repair
 
 Two user-run Studionet deployment attempts from the authorized wallet reached
 consensus but failed during GenVM constructor execution because Studio supplied
